@@ -1,19 +1,15 @@
-Here’s the rewritten MRS strategy doc in Palantir style, correcting the baseline point (they’re computed internally, not ingested):
-
-⸻
-
-Goal
+# Goal
 
 Detect, cluster, and attribute short-term sales anomalies across retailers so root causes (e.g., social/viral effects, competitor stockouts, data errors, promos) are identified early and downstream decision systems (MAB, MMM) are protected from distortion.
 
-Categorization
+# Categorization
 
 We use an internal anomaly taxonomy with three dimensions:
 	•	Detection Type — source category of the anomaly (Data Error, Marketing Misattribution, Competitor Stockout, Social/Viral Event, Operational/Store Issue).
 	•	Impact Vector — which part of the commercial system is distorted (baseline drift, attribution error, spend leakage, operational disruption).
 	•	Confidence Tier — escalation thresholds used by automation/HITL (Low / Medium / High).
 
-Strategy Abstract
+# Strategy Abstract
 
 High-level flow:
 	•	Baseline & detect (internal): baselines are computed inside detection from historical sales (per store/SKU/window). No external baseline feed is ingested. Anomalies (“Minority Reports”) are recomputed on each new data arrival with a deterministic report_id (hash of store_id + window_start), keeping the system stateless and idempotent.
@@ -24,7 +20,7 @@ High-level flow:
 	•	Automation/HITL: apply confidence rules (e.g., weekend mode auto-confirm at >70%) and surface to analysts when confidence is lower or decisions are consequential.
 	•	Protection: feed event status/attribution back to MAB/MMM to prevent false credit and baseline corruption.
 
-Technical Context
+# Technical Context
 
 Design principles
 	•	Log-driven & stateless: every stage appends to an authoritative log; no stage mutates a hydrated object. Re-running with new data re-emits the same IDs for the same windows.
@@ -50,7 +46,7 @@ Field precedence (per report)
 Retailer alignment
 	•	Retailer is per store. Event roll-ups emit store_id_n and its corresponding retailer_n from the same position (not a unique set of retailers). This preserves one-to-one mapping needed by marketers.
 
-Blind Spots and Assumptions
+# Blind Spots and Assumptions
 
 Assumptions
 	•	Historical data is sufficient to compute stable baselines internally.
@@ -64,7 +60,7 @@ Blind spots
 	•	Novel causes not yet modelled.
 	•	Upstream latency or outages that delay evidence and confidence evolution.
 
-False Positives
+# False Positives
 
 Potential sources
 	•	Planned maintenance/test activity misread as Data Error.
@@ -76,21 +72,21 @@ Minimisation
 	•	Add backend filters for high-frequency benign patterns.
 	•	Use analyst feedback to tune attribution thresholds and narratives.
 
-Validation
+# Validation
 
 True-positive validation (repeatable tests)
 	•	Inject synthetic viral signal → expect detection, clustering, and attribution = Social/Viral; event roll-up created; MAB/MMM guarded.
 	•	Simulate store-feed corruption → expect attribution = Data Error; auto-confirm if confidence >70% in weekend mode; downstream protection flagged.
 	•	Replay competitor stockout series → expect Competitor attribution and spend-shielding where relevant.
 
-Priority
+# Priority
 
 Priority combines cause and confidence:
 	•	High — Data Error, System Failure, Competitor Stockout with confidence ≥70% or high estimated impact.
 	•	Medium — Marketing Misattribution, Social/Viral with moderate confidence/impact.
 	•	Low — Confidence <30% or negligible commercial impact.
 
-Response
+# Response
 
 When an event surfaces:
 	1.	Operate at the event level (report_group_id) — don’t chase stores unless asked.
@@ -106,4 +102,3 @@ Additional Resources
 	•	Attribution model & narratives specification (internal)
 	•	MAB/MMM protection playbooks (internal)
 
-⸻
