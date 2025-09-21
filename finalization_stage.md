@@ -10,7 +10,7 @@ It is implemented as a **transform** — `build_minority_reports_finalised_log_f
 
 This stage:  
 1. Consumes proposed attribution outputs (MRPAL).  
-2. Consumes user edits from the UI (`ui_edits_log`).  
+2. Consumes user edits from the UI (`user_edits_log`).  
 3. Normalises and cleans identifiers.  
 4. Writes authoritative finalised rows into **MRFL**.  
 
@@ -20,7 +20,7 @@ This stage:
 - **`minority_reports_proposed_attribution_log` (MRPAL)**  
   - Provides proposed_cause, confidence_score, and attribution metadata.  
 
-- **`ui_edits_log`**  
+- **`user_edits_log`**  
   - Source of human-in-the-loop edits (proposed cause/category overrides, annotation, timestamps).  
 
 - **`demo_run_config`**  
@@ -72,14 +72,14 @@ This stage:
 - Deterministic, stateless transform: replays logs on each run.  
 - MRFL content always reproducible from:  
   - MRPAL (proposed fields)  
-  - ui_edits_log (overrides)  
+  - user_edits_log (overrides)  
   - config  
 
 ---
 
 ## 6. Flow Summary  
 1. **MRPAL** supplies proposed attribution.  
-2. **ui_edits_log** supplies user overrides.  
+2. **user_edits_log** supplies user overrides.  
 3. **Transform** merges and cleans identifiers.  
 4. **MRFL row** written with authoritative final values.  
 5. **Downstream hydrate** consumes MRFL to overwrite proposed fields with finalised ones.  
