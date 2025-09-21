@@ -1,115 +1,102 @@
-# Rereview Stage — Minority Report System  
+# Rereview Stage — Minority Report System
 **File:** `rereview_stage.md`  
 **Last Updated:** 2025-09-21  
 
 ---
 
-## Overview  
-The rereview stage provides a clean way to re-run clustering and attribution for already-finalised minority reports, without overwriting original logs.  
-It is implemented as **three transforms**:  
+## Overview
+The rereview stage is designed to re-run already finalised minority reports back through the **same clustering and attribution models** used in the main classification flow.  
+The purpose is to improve attribution on lower-confidence reports once models have been more highly trained, without breaking the system’s acyclic, log-driven architecture.  
 
-1. `build_rereview_worklist.py` → queue of reports flagged for rereview.  
-2. `rereview_cluster_reports.py` → re-run clustering for those reports.  
-3. `rereview_propose_cause.py` → re-run attribution for those reports.  
+Rereview is implemented as three transforms:
+1. `build_rereview_worklist.py`  
+2. `rereview_cluster_reports.py`  
+3. `rereview_propose_cause.py`  
 
-All three write to **separate append-only logs**. Hydration merges rereview outputs with originals under strict precedence rules, keeping the system **stateless and acyclic**.  
+All rereview outputs are written to **separate append-only logs**, never overwriting the originals. Hydration reads rereview logs alongside the originals, applying precedence where applicable.  
 
 ---
 
-## 1. Transform: `build_rereview_worklist.py`  
+## 1. Transform: `build_rereview_worklist.py`
 
-### Purpose  
-Selects minority reports requiring rereview and builds a dedicated worklist.  
+### Purpose
+Build a controlled queue of reports eligible for rereview.  
 
-### Inputs  
-- `minority_reports_finalised_log` (MRFL) — authoritative source of HITL outcomes.  
-- `demo_run_config`.  
+### Inputs
+- `minority_reports_finalised_log` (MRFL)  
+- `demo_run_config`  
 
-### Outputs  
+### Outputs
 - `minority_reports_rereview_worklist`  
-  - Fields: `report_id`, `store_id`, `sku`, `reason_code`, `requested_at`, `run_id`.  
 
-### Logic  
-- Filter MRFL for rows flagged as `needs_rereview` (by user or system rule).  
-- Append one row per flagged report to the worklist log.  
+### Logic
+- Checks that the **main system is operational**. If not, the transform does not write logs (ensuring rereview never occurs during partial outages).  
+- Selects reports that meet the **conditional logic**:  
+  - Report is older than **6 months**  
+  - Confidence score > **50%**  
+- Appends one row per qualifying report to the rereview worklist.  
 
 ---
 
-## 2. Transform: `rereview_cluster_reports.py`  
+## 2. Transform: `rereview_cluster_reports.py`
 
-### Purpose  
-Re-runs clustering on reports from the rereview worklist.  
+### Purpose
+Re-run clustering for rereviewed reports using the **same clustering model** as in the main system.  
 
-### Inputs  
-- `minority_reports_rereview_worklist`.  
-- `sales_timeseries_data`.  
-- Optional: `baseline_sales_model_prediction_log`.  
-- `demo_run_config`.  
+### Inputs
+- `minority_reports_rereview_worklist`  
+- `sales_timeseries_data`  
+- `minority_reports_finalised_log` (MRFL)  
 
-### Outputs  
+### Outputs
 - `minority_reports_clustered_rereview_log`  
-  - Mirrors schema of MRCL.  
-  - Fields: `report_id`, `feature_vector`, `cluster_id`, `cluster_name`,  
-    `similarity_score`, `cluster_match_confidence`, `tsne_x`, `tsne_y`,  
-    `written_at`, `run_id`.  
 
-### Logic  
-- For each report_id in the worklist:  
-  - Slice sales data using `window_start → window_end` (from MRFL).  
-  - Build feature vector.  
-  - Run clustering model.  
-- Write results as new log rows; originals in MRCL remain untouched.  
+### Logic
+- For each report in the worklist:  
+  - Slice sales data using `window_start → window_end` from MRFL.  
+  - Build a feature vector over that slice.  
+  - Pass the feature vector to the clustering model.  
+- Write results to the rereview clustering log (MRCL is never modified).  
 
 ---
 
-## 3. Transform: `rereview_propose_cause.py`  
+## 3. Transform: `rereview_propose_cause.py`
 
-### Purpose  
-Re-runs attribution for rereviewed reports, using contextual and campaign data.  
+### Purpose
+Re-run attribution for rereviewed reports using the **same attribution model** as in the main system.  
 
-### Inputs  
-- `minority_reports_clustered_rereview_log`.  
-- `sales_timeseries_data`.  
-- `contextual_data`, `all_campaign_data`.  
-- `demo_run_config`.  
+### Inputs
+- `minority_reports_rereview_worklist`  
+- `sales_timeseries_data`  
+- `minority_reports_finalised_log` (MRFL)  
 
-### Outputs  
+### Outputs
 - `minority_reports_proposed_attribution_rereview_log`  
-  - Mirrors schema of MRPAL.  
-  - Fields: `report_id`, `proposed_cause`, `proposed_cause_category`,  
-    `confidence_score`, `supporting_evidence`,  
-    `baseline_sales_total`, `attributed_sales_total`,  
-    `proposed_cause_2/_3`, `confidence_score_2/_3`,  
-    `report_status`, `written_at`, `run_id`.  
 
-### Logic  
-- For each rereviewed cluster:  
-  - Evaluate campaign overlaps and contextual signals.  
-  - Propose cause(s) + confidence scores.  
-- Write results as new log rows; originals in MRPAL remain untouched.  
+### Logic
+- For each report in the worklist:  
+  - Gather time-series slices and metadata from MRFL.  
+  - Pass inputs through the attribution model.  
+  - Generate proposed cause(s) and updated confidence scores.  
+- Write results to the rereview attribution log (MRPAL is never modified).  
 
 ---
 
-## 4. Acyclic Design  
+## 4. Acyclic Design
 
-- **No rereview transform writes back to MRCL, MRPAL, or MRFL.**  
-- All rereview outputs are written to `*_rereview_log`.  
-- Hydration unions rereview logs with originals:  
-  - If rereview exists → it takes precedence in the **hydrated view only**.  
-  - Originals remain immutable for audit.  
-
-This ensures:  
-- Auditability (all proposals preserved).  
-- Stateless replays (hydrated object always reproducible from logs).  
-- DAG remains acyclic (no feedback into upstream transforms).  
+- **No rereview transform overwrites MRCL, MRPAL, or MRFL.**  
+- All rereview outputs are written to dedicated `*_rereview_log` datasets.  
+- Hydration merges rereview logs with originals under strict precedence rules.  
+- Because rereview logs are downstream-only, the DAG remains acyclic and fully replayable.  
 
 ---
 
-## 5. Flow Summary  
+## 5. Rationale
 
-1. **Finalised reports** (MRFL) → `build_rereview_worklist.py` → `minority_reports_rereview_worklist`.  
-2. **Worklist** → `rereview_cluster_reports.py` → `minority_reports_clustered_rereview_log`.  
-3. **Cluster rereview log** → `rereview_propose_cause.py` → `minority_reports_proposed_attribution_rereview_log`.  
-4. **Hydration** merges rereview logs with originals under precedence rules.  
-
----
+- Reports selected are **lower-confidence historical cases**.  
+- By re-running them through better-trained clustering and attribution models, the system improves the overall quality of attributions.  
+- Audit trail is preserved: both original and rereviewed proposals are available in logs.  
+- Rereview is **conditional, safe, and non-invasive**:  
+  - Only runs if the main system is operational  
+  - Never rewrites existing logs  
+  - Isolates outputs in rereview logs  
