@@ -1,4 +1,3 @@
-
 # System Resilience & Dependency Strategy
 
 This document defines the resilience, dependency, and fault-tolerance patterns used in the Minority Report System (MRS).  
