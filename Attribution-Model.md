@@ -108,8 +108,28 @@ The attribution model consumes:
 ---
 
 ## System Dependencies & Resilience
-- Attribution depends on detection (baselines, anomalies) and external feeds (campaigns, competitor).  
-- Fallbacks: if feeds are delayed, attribution still emits with lowered confidence.  
-- Resilience: downstream systems (MAB/MMM) consume event-level attribution defensively, weighting by confidence and allowing replays when backfilled.  
 
----
+Attribution depends directly on:
+- **Detection outputs** (baselines, anomalies)  
+- **Contextual feeds** (campaign metadata, competitor signals, ops logs)  
+
+### Built-in Resilience Patterns
+- **Append-only logs:** Attribution writes only to `minority_reports_proposed_attribution_log`. No destructive updates; late or replayed runs simply append with a new `a_written_at`.  
+- **Null-tolerant hydration:** If attribution rows are missing, the hydrate/finalize step coalesces from fallbacks (e.g., cluster or UI edits) so downstream objects still render.  
+- **Degraded status flags:** The finalizer attaches `is_degraded=true` and suffixes `report_status` (e.g., `finalised_MRPAL_down`) when attribution is absent but a fallback filled the field.  
+- **Graceful degradation:** If attribution fails entirely:
+  - `proposed_cause_category = "unknown"`  
+  - `proposed_cause = NULL`  
+  - `confidence_score = NULL`  
+  This allows HITL to proceed without blocking detection/cluster context.  
+
+### Recovery & Replay
+- Because attribution logs are keyed by `(report_id, a_written_at)`, replaying attribution after feed recovery is safe and idempotent.  
+- Downstream systems (MAB/MMM) consume attribution with confidence-weighting. If confidence is null or degraded, they down-weight or exclude the event until reprocessed.  
+
+### Monitoring & Guardrails
+- **Freshness SLI:** max(now() - max(a_written_at)) must remain < 4 hours (p95).  
+- **Coverage SLI:** ≥80% of detected reports should have attribution within SLA.  
+- **Error dataset:** irrecoverable parsing failures (e.g., malformed campaign JSON) are routed to `_errors` with `report_id`, payload, and error string.  
+
+This ensures attribution is **non-blocking**, observable, and recoverable: the pipeline continues producing usable reports even if attribution feeds lag or fail, and downstream systems adjust automatically until backfill occurs.
