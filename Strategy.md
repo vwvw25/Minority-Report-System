@@ -20,7 +20,7 @@ High-level flow:
 1. **Baseline & detect (internal)**  
    - Baselines are computed inside detection from historical sales (per store/SKU/window).  
    - No external baseline feed is ingested.  
-   - Anomalies (“Minority Reports”) are recomputed on each new data arrival with a deterministic `report_id` (hash of store_id + window_start), keeping the system stateless and idempotent.  
+   - Anomalies (“Minority Reports”) are recomputed on each new data arrival with a deterministic `report_id` (hash of store_id + first_detected_from), keeping the system stateless and idempotent.  
 
 2. **Cluster**  
    - Group similar reports using feature similarity; attach cluster metadata.  
@@ -53,6 +53,59 @@ High-level flow:
 - **Deterministic identities** — `report_id = hash(store_id || window_start)`; event IDs derived from stable inputs.  
 - **UI constraint** — one row per report; multi-candidate attribution encoded as `_2`, `_3` columns (no arrays).  
 
+#### Deterministic Identity
+Report identity is guaranteed by hashing `store_id || first_detected_from`.  
+- `first_detected_from` is derived from a reproducible rule in the anomaly classifier model.  
+- This guarantees the same anomaly produces the same `report_id` on every replay, ensuring idempotence and reliable joins across logs.
+- All downstream logs and joins depend on this guarantee; it is non-negotiable.  
+
+#### Primary Key Semantics
+
+All core datasets in the Minority Report System are append-only logs. This behaviour is natural in Foundry: logs never mutate, they only accumulate, and hydrate is the mechanism that materialises state.
+Each new row represents a fresh snapshot of an anomaly; existing rows are never updated or deleted.  
+This reflects Foundry’s immutability model: datasets grow only by appending rows, and state is materialised later through views such as `hydrate_minority_reports`.  
+
+Within this context, `report_id` functions as the logical primary key.  
+Multiple rows with the same `report_id` are expected and represent successive versions of the same anomaly over time, not duplicates.  
+
+- **Append-only** — Every change produces a new row; history is preserved.  
+- **Snapshots** — Each row encodes anomaly state at its `written_at` timestamp.  
+- **Hydration resolves identity** — Rows with the same `report_id` are coalesced to the latest version.  
+- **Auditability** — Because no history is overwritten, the entire lifecycle of an anomaly can be replayed.  
+- **Determinism** — Stable report_ids + append-only logs guarantee reproducible results across replays.  
+
+#### Example: Append-only primary key
+
+Append-only logs can contain multiple rows for the same `report_id`.  
+Each row is a **snapshot** at a different `written_at`. Hydrate coalesces these into the latest version.
+
+---
+
+**Log (minority_reports_detected_log):**
+
+| report_id                                              | store_id | window_start | window_end | severity | written_at |
+|--------------------------------------------------------|----------|--------------|------------|----------|------------|
+| MR-hash(STORE_BIR_001|2025-08-07T09:00:00Z)            | STORE_BIR_001 | 09:00        | NULL       | 0.42     | 10:00      |
+| MR-hash(STORE_BIR_001|2025-08-07T09:00:00Z)            | STORE_BIR_001 | 09:00        | NULL       | 0.57     | 10:05      |
+| MR-hash(STORE_BIR_001|2025-08-07T09:00:00Z)            | STORE_BIR_001 | 09:00        | 10:30      | 0.81     | 10:30      |
+
+---
+
+**Hydrated object (minority_reports):**
+
+| report_id                                              | store_id | window_start | window_end | severity | written_at |
+|--------------------------------------------------------|----------|--------------|------------|----------|------------|
+| MR-hash(STORE_BIR_001|2025-08-07T09:00:00Z)            | STORE_BIR_001 | 09:00        | 10:30      | 0.81     | 10:30      |
+
+---
+
+**Key points:**  
+- Log is **append-only**: each new row adds a snapshot. No overwrites.  
+- Multiple rows share the same `report_id` (deterministic from `store_id || first_detected_from`).  
+- Hydrate chooses the latest by `written_at` (or `finalized_at` in finalisation logs).  
+- This guarantees both **auditability** (all history is retained) and **determinism** (final object is reproducible).  
+- Foundry’s append-only design makes this natural: logs never mutate, only accumulate.  
+
 ### Authoritative Logs
 - `minority_reports_detected_log` — per-report totals & window_start; contains internally computed baseline and attributed vs baseline sales.  
 - `minority_reports_clustered_log` — cluster metadata.  
@@ -72,6 +125,20 @@ High-level flow:
 - Retailer is per store. Event roll-ups emit `store_id_n` and its corresponding `retailer_n` from the same position (not a unique set of retailers).  
 
 ---
+
+#### Idempotency in Execution
+
+Because Foundry datasets are immutable and append-only, idempotency is handled at two levels:
+
+- **Transform-level deduplication**  
+  Each transform ends with a `.dropDuplicates(keys)` to ensure that replays or retries do not emit duplicate rows for the same `report_id`.  
+
+- **Hydration-level coalescing**  
+  Multiple rows with the same `report_id` are expected across logs. Hydrate resolves these by taking the latest version (based on `written_at` or `finalized_at`), ensuring that the final `minority_reports` object is deterministic and reproducible.  
+
+This guarantees that re-running the system with the same inputs produces the same outputs, even though intermediate logs may contain multiple snapshots.
+
+
 
 ## Orchestration & Scheduling
 - Tasks run as append-only transforms; failures are contained per stage.  
