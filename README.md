@@ -1,5 +1,3 @@
-# Minority-Report-System
-
 # Minority Report System (MRS)
 
 ## Overview
@@ -7,7 +5,9 @@ The Minority Report System (MRS) is a mocked but production-grade demo pipeline 
 Its goal is to **detect, cluster, attribute, and cohort short-term sales anomalies** so that commercial teams can understand root causes and prevent distortion in downstream decision systems (e.g., MAB, MMM).  
 
 The project focuses on **system design** — log-driven, stateless, and idempotent — rather than training live machine learning models.  
-All core transforms, datasets, governance hooks, and user interfaces are built as they would be in a deployment; model “intelligence” is mocked so the pipeline runs end-to-end without external ML infrastructure.
+All core transforms, datasets, governance hooks, and user interfaces are built as they would be in a deployment; model “intelligence” is mocked so the pipeline runs end-to-end without external ML infrastructure.  
+
+➡️ **To best understand the system, watch the demo video [here](INSERT-LINK).**
 
 ---
 
@@ -21,12 +21,16 @@ All core transforms, datasets, governance hooks, and user interfaces are built a
 ---
 
 ## Repository Structure
-- **`strategy.md`** — High-level system strategy, design philosophy, and enterprise context.  
-- **`attribution_stage.md`** — Detailed specification for the attribution transform (inputs, outputs, logic, resilience).  
-- **Other `*_stage.md` files** — Stage-level docs for detection, clustering, cohorting, and finalisation.  
-- **`/transforms`** — Python code for pipeline transforms (e.g., `detect_anomalies.py`, `propose_cause_for_minority.py`).  
-- **`/schemas`** — Dataset schema definitions.  
-- **`/ui`** — Slate UI specifications for analyst workflows (HITL, dashboards).  
+- [`architecture/Strategy.md`](./architecture/Strategy.md) — High-level system strategy and design philosophy.  
+- [`architecture/Resilience-and-dependency-strategy.md`](./architecture/Resilience-and-dependency-strategy.md) — Resilience and dependency handling patterns.  
+- [`stages/`](./stages) — Stage-level docs:  
+  - [Detection](./stages/detection_stage.md)  
+  - [Clustering](./stages/clustering_stage.md)  
+  - [Cohorting](./stages/cohorting_stage.md)  
+  - [Attribution](./stages/attribution_stage.md)  
+  - [Finalization](./stages/finalization_stage.md)  
+  - [Hydration](./stages/hydration_stage.md)  
+  - [Rereview](./stages/rereview_stage.md)  
 
 ---
 
@@ -57,11 +61,3 @@ This is a **demo build**:
 - Governance, lineage, and UI = real.  
 
 The system demonstrates how anomaly detection can be operationalised in enterprise settings where **auditability, determinism, and replayability** are critical.
-
----
-
-## Next Steps
-- Swap mocked models for real statistical/ML implementations.  
-- Extend attribution taxonomy for novel cause types.  
-- Backtest on real historical data.  
-- Productionise monitoring and SLO dashboards.
