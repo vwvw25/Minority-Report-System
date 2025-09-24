@@ -1,6 +1,6 @@
 # Attribution Stage — Minority Report System  
 **File:** `attribution_stage.md`  
-**Last Updated:** 2025-09-21  
+**Last Updated:** 2025-09-24  
 
 ---
 
@@ -125,3 +125,69 @@ The authoritative attribution model log.
 - `report_status`  
 - `written_at`  
 - `run_id`  
+
+---
+
+## 9. Field Precedence  
+- **Analyst overrides** (edit/finalization logs) > **Proposed Attribution log** > **Cluster metadata**.  
+- If multiple candidates exist, ordering is by confidence score.  
+- If scores tie, deterministic tie-break via lexical sort on category.  
+
+---
+
+## 10. Blind Spots & Assumptions  
+- Cause categories are finite; novel causes require retraining or taxonomy extension.  
+- Attribution relies on external feeds (campaign, competitor); latency or incompleteness reduces confidence.  
+- Confidence is model-relative, not absolute probability — calibration is ongoing.  
+
+---
+
+## 11. Validation  
+- **Synthetic data tests:** inject controlled anomalies with known causes (e.g., TikTok spike) and confirm attribution.  
+- **Backtests:** run over historical anomalies with ground truth.  
+- **HITL cross-check:** analyst feedback loop comparing proposed vs. confirmed causes.  
+
+---
+
+## 12. Response Rules  
+- **High confidence (>70%)** — automation may act (auto-confirm, feed downstream systems).  
+- **Medium confidence (30–70%)** — analyst review recommended.  
+- **Low confidence (<30%)** — attribution flagged as tentative; event remains “open loop” for reframing.  
+
+---
+
+## 13. Audit & Governance  
+- All attribution decisions are logged with deterministic IDs and timestamps for replayability.  
+- Edit/finalization logs preserve analyst overrides separately for lineage.  
+- Periodic audits ensure override rates remain within tolerance and model drift is tracked.  
+
+---
+
+## 14. Resilience & Recovery  
+
+### Dependencies  
+- Detection outputs (MRDL).  
+- Contextual feeds (campaign metadata, competitor signals, ops logs).  
+
+### Patterns  
+- **Append-only logs:** Attribution writes only to MRPAL. No destructive updates.  
+- **Null-tolerant hydration:** Hydrate/finalize coalesces from fallbacks if attribution is missing.  
+- **Degraded status flags:** Finalizer sets `is_degraded=true` and suffixes `report_status` when attribution is absent but fallback filled the field.  
+- **Graceful degradation:** If attribution fails entirely:  
+  - `proposed_cause_category = "unknown"`  
+  - `proposed_cause = NULL`  
+  - `confidence_score = NULL`  
+
+### Replay  
+- Attribution logs keyed by `(report_id, a_written_at)` ensure replay is safe and idempotent.  
+- Downstream systems down-weight degraded or NULL attributions until reprocessed.  
+
+### Monitoring & Guardrails  
+- **Freshness SLI:** `max(now() - max(a_written_at)) < 4 hours (p95)`.  
+- **Coverage SLI:** ≥80% of detected reports have attribution within SLA.  
+- **Error dataset:** irrecoverable parsing errors routed to `_errors` with `report_id`, payload, error string.  
+
+---
+
+**Summary:**  
+The attribution stage is a transform that joins in contextual/campaign data, applies attribution logic, and writes authoritative rows into MRPAL. It preserves append-only lineage, tolerates degraded conditions, and remains replayable and auditable, ensuring attribution supports downstream systems without blocking pipeline flow.  
