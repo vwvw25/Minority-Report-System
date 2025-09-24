@@ -46,11 +46,14 @@ This means the upgrade path is clear: real ML models can replace the mocks witho
 ---
 
 ## Success Criteria
-- End-to-end pipeline runs in Foundry with append-only logs and deterministic IDs.  
-- Outputs are realistic and schema-aligned at every stage.  
-- Analysts can review anomalies in Workshop via HITL.  
-- Architecture is complete, auditable, and replayable.  
-- Upgrade to live ML models requires no redesign.  
+
+The mocked build demonstrates:
+
+- End-to-end anomaly detection pipeline with append-only logs and deterministic identities.  
+- Plausible outputs at every stage, schema-correct and replayable.  
+- Clear, low-friction upgrade path to real ML models without changing interfaces.  
+- Full auditability, replayability, and HITL fit-for-purpose.  
+- **UI impact** — not just functional, but compelling. The Workshop interface is designed to make analysts and marketers say “oooh”: intuitive, enterprise-grade, and visually robust, showing the value of the system at a glance.  
 
 ---
 
