@@ -50,8 +50,7 @@ High-level flow:
 ### Design Principles
 - **Log-driven & stateless** — every stage appends to an authoritative log; no stage mutates hydrated objects.  
 - **Open loops** — closed events can reopen; confidence evolves as data accumulates; context can reframe meaning without breaking lineage.  
-- **Deterministic & append-only identity** — each report and event ID is derived from stable inputs (`report_id = hash(store_id || window_start)`), ensuring reproducible joins and lineage.  
-- **UI constraint** — one row per report; multi-candidate attribution encoded as `_2`, `_3` columns (no arrays).  
+- **Deterministic & append-only identity** — each report and event ID is derived from stable inputs (`report_id = hash(store_id || window_start)`), ensuring reproducible joins and lineage.   
 
 ---
 
