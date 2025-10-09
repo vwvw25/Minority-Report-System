@@ -1,7 +1,7 @@
 # Minority Report System (MRS)
 
 ## Overview
-The Minority Report System (MRS) is a mocked but production-grade demo pipeline built in Foundry.  
+The Minority Report System (MRS) is a production-grade demo pipeline in Foundry.  
 Its goal is to identify and classify sales anomalies to avoid distorting downstream decision systems (e.g., MAB, MMM).  
 
 The project focuses on **system design** — log-driven, stateless, and idempotent — rather than training live machine learning models.  
