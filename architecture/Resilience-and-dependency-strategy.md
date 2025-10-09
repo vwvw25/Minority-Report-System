@@ -9,10 +9,10 @@ The goal is to ensure anomaly detection, clustering, attribution, and hydration 
 
 - **Append-only logs + late hydration**  
   All transforms write only to `*_log` datasets. The hydrate step is the only “current state” read.  
-  If one log is stale/missing, hydrate still builds rows from what exists (coalescing nulls) so the UI does not 500.  
+  If one log is stale or missing, hydrate still builds rows from what exists (coalescing nulls) so the UI does not fail.  
 
 - **Stage isolation**  
-  Each stage reads its inputs only and never depends on downstream outputs. Failures are contained within a single dataset.  
+  Each stage reads only its defined inputs and never depends on downstream outputs. Failures are contained within a single dataset.  
 
 - **Run-scoped views**  
   UIs read views filtered by `demo_run_config.run_id`. A run can be “reset” simply by advancing the run_id, even if prior logs are unhealthy.  
@@ -27,7 +27,7 @@ The goal is to ensure anomaly detection, clustering, attribution, and hydration 
 
 - **Null-safe hydration** — coalesce across sources; missing inputs yield NULLs in only their columns.  
 - **Schema evolution guards** — ingest transforms add absent columns as typed NULLs before joins to tolerate partial deploys.  
-- **Idempotent keys** — `(report_id, written_at, version, store, sku)` ensure replay/re-emission without duplication.  
+- **Idempotent keys** — `(report_id, written_at, version, store, sku)` ensure replay or re-emission without duplication.  
 
 ---
 
@@ -52,10 +52,10 @@ The goal is to ensure anomaly detection, clustering, attribution, and hydration 
 
 - **Detection (critical)**  
   If baseline/classifier unavailable, fall back to a deviation heuristic.  
-  Mark `report_status = '1_detected (degraded)'` and continue.  
+  Mark as degraded detection and continue.  
 
 - **Clustering (important, non-blocking)**  
-  If cluster fails, still emit row with `cluster_id = NULL`. Hydrate/UI show “unclustered.”  
+  If clustering fails, emit row with `cluster_id = NULL`. Hydrate/UI show “unclustered.”  
 
 - **Attribution (important, non-blocking)**  
   If inputs fail, emit with `proposed_cause = 'unknown'`, `confidence_score = NULL`. HITL can still proceed.  
@@ -65,27 +65,7 @@ The goal is to ensure anomaly detection, clustering, attribution, and hydration 
 
 ---
 
-## 6. Monitoring, SLOs, and Guardrails
-
-### SLIs
-- Freshness per log: `max(now() - max(written_at))`.  
-- Coverage: % of detected reports that have cluster/attribution within SLA.  
-- Error rate: % of rows into `_errors` datasets.  
-
-### SLOs (examples)
-- Detection freshness < 30 min (p95).  
-- Cluster + Attribution freshness < 4 hrs (p95).  
-- < 1% rows into `_errors`.  
-
-### Health Views
-Dashboards with last `written_at`, row counts by status, and error counts per log.  
-
-### Alerting
-Trigger alerts when freshness breaches or coverage drops (e.g., attribution coverage < 80% for active reports).  
-
----
-
-## 7. Coding Patterns (Keep)
+## 6. Coding Patterns (Keep)
 
 - **Optional input touch** without dependency:  
 
@@ -108,11 +88,14 @@ Trigger alerts when freshness breaches or coverage drops (e.g., attribution cove
 
 ---
 
-## 8. Finalise Log Resilience
+## 7. Finalisation & Recovery
 
-The **finalise log** consolidates all sources into the authoritative “current state” row per report. Resilience here is critical, since this is the version exposed to the UI and analysts.  
+### Finalise Log Resilience
 
-Key patterns:  
+The **finalise log** consolidates all sources into the authoritative “current state” row per report.  
+Resilience here is critical since this version is exposed to the UI and analysts.  
+
+**Key patterns:**  
 
 - **Explicit precedence chains**  
   Each field group is filled with `coalesce` in a fixed order (e.g., proposed cause: cohort → attribution → UI). If no source provides the field, it remains NULL.  
@@ -132,13 +115,11 @@ Key patterns:
   - `MEEL_down` → ended log missing  
 
 - **Observability**  
-  These provenance fields (`source_used_*`, `degraded_reasons`) may be kept internal, but they allow ops to quickly diagnose whether degradation was due to cohorts, attribution, clustering, etc.  
+  These provenance fields (`source_used_*`, `degraded_reasons`) may be kept internal but allow ops to quickly diagnose whether degradation was due to cohorts, attribution, clustering, etc.  
 
-This approach guarantees that **finalised rows always exist** (no 500s) while clearly signalling to downstreams when confidence is reduced.  
+This guarantees that **finalised rows always exist** while clearly signalling when confidence is reduced.
 
----
-
-## 9. Operational Run-Book
+### Recovery Procedures
 
 - **External feed down** → pipeline continues, attribution degrades; backfill and rerun attribution when feed recovers.  
 - **Cluster model error** → route to mock/bypass clustering; hydrate still shows detection rows.  
@@ -147,14 +128,14 @@ This approach guarantees that **finalised rows always exist** (no 500s) while cl
 
 ---
 
-## 10. Bulkheads & Concurrency
+## 8. Bulkheads & Concurrency
 
 - Isolate compute pools (detection vs refresh).  
 - Cap per-run worklists; partition processing by `run_id`.  
 
 ---
 
-## 11. Chaos & Validation
+## 9. Chaos & Validation
 
 - **Dry-run mode** — transforms accept flag to limit to `limit(1000)`.  
 - **Fault injection** — periodically drop a non-critical input in staging; confirm degrade path and SLIs.  
@@ -162,14 +143,23 @@ This approach guarantees that **finalised rows always exist** (no 500s) while cl
 
 ---
 
-## Immediate Checklist
+## 10. Monitoring, SLOs, and Guardrails
 
-- Hydrate coalesces sources; keep null-safe.  
-- End each stage with `.dropDuplicates(keys)` and typed casts.  
-- Attribution: add “degraded” status when inputs missing.  
-- Add `_errors` datasets for parsing failures.  
-- Add SLIs with one-row freshness/coverage transforms.  
-- Document degrade paths and UI signalling in README/spec.  
+### SLIs
+- Freshness per log: `max(now() - max(written_at))`.  
+- Coverage: % of detected reports that have cluster/attribution within SLA.  
+- Error rate: % of rows into `_errors` datasets.  
+
+### SLOs (examples)
+- Detection freshness < 30 min (p95).  
+- Cluster + Attribution freshness < 4 hrs (p95).  
+- < 1% rows into `_errors`.  
+
+### Health Views
+Dashboards with last `written_at`, row counts by status, and error counts per log.  
+
+### Alerting
+Trigger alerts when freshness breaches or coverage drops (e.g., attribution coverage < 80% for active reports).  
 
 ---
 
