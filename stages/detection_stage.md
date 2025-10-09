@@ -1,174 +1,73 @@
 # Detection Stage — Minority Report System  
 **File:** `detection_stage.md`  
-**Last Updated:** 2025-09-21  
 
 ---
 
 ## 1. Purpose  
 The detection stage is the **entry point** of the Minority Report System.  
-It runs:  
-1. A **Baseline Sales Model** — predicts expected sales.  
-2. An **Anomaly Classifier** — compares actual vs. baseline to detect unusual behaviour.  
-3. A **Detection Transform (`detect_anomalies.py`)** — orchestrates the models, generates logs, attaches stable IDs, computes sales totals, and formalises **minority reports**.  
-
-All downstream clustering/attribution relies on these logs.  
+It combines a **Baseline Sales Model** and an **Anomaly Classifier**, orchestrated by the transform `detect_anomalies.py`, to identify and formalise sales anomalies as **minority reports**.  
+All downstream clustering, attribution, and hydration depend on these logs.
 
 ---
 
 ## 2. Inputs  
-- **`sales_timeseries_data`**  
-  - Actual observed sales, store_id × sku × 5-minute buckets.  
-
-- **`demo_run_config`**  
-  - Provides `run_id`.  
+- **`sales_timeseries_data`** — observed sales by store × SKU × time.  
+- **`demo_run_config`** — provides `run_id`.  
 
 ---
 
 ## 3. Outputs  
+| Dataset | Purpose |
+|----------|----------|
+| `baseline_sales_model_prediction_log` | Expected sales per store/SKU/timestamp. |
+| `anomaly_classifier_model_prediction_log` | Flags potential anomalies with timing and severity. |
+| `minority_reports_detected_log` (MRDL) | Consolidated anomaly view (one row per tick per anomaly). |
+| `minority_event_ended_log` (MEEL) | Marks anomaly closure. |
 
-### 3.1 `baseline_sales_model_prediction_log`  
-- Expected sales trajectory per store/sku/timestamp.  
-- Generated inside `detect_anomalies.py`.  
-- Used for both anomaly comparison and sales totals.  
-
-### 3.2 `anomaly_classifier_model_prediction_log`  
-- One row per tick if anomaly suspected.  
-- Fields:  
-  - `window_start` = estimated onset (may backfill earlier than detection).  
-  - `window_end` = null until anomaly ends.  
-  - `first_detected_from` = tick when anomaly first noticed.  
-  - `severity_score`, `impact_estimate`.  
-  - `written_at` (tick timestamp).  
-
-### 3.3 `minority_reports_detected_log` (MRDL)  
-- One row per tick per minority report.  
-- Fields include:  
-  - `report_id` = hash(store_id || first_reported_at).  
-  - `store_id`, `sku`.  
-  - `first_reported_at` = first anomaly tick in X-hour window (stable anchor).  
-  - `first_detected_from` = classifier’s detection timestamp (may shift).  
-  - `window_start`, `window_end`.  
-  - `severity_score`, `impact_estimate`.  
-  - `baseline_sales_total` = ∑ baseline predictions between window_start → written_at.  
-  - `attributed_sales_total` = ∑ actual sales between window_start → written_at.  
-  - `report_status='detected'`.  
-  - `written_at`, `run_id`.  
-
-### 3.4 `minority_event_ended_log` (MEEL)  
-- Written when classifier stops reporting an anomaly.  
-- Fields: `report_id`, `store_id`, `sku`, final `window_end`.  
-- `event_status='ended'`.  
+Each log is **append-only**, keyed by stable IDs (`report_id = hash(store_id || first_reported_at)`).
 
 ---
 
-## 4. Logic  
-
-### 4.1 Baseline Sales Model (inside detection transform)  
-- Runs against `sales_timeseries_data`.  
-- Produces expected values per store/sku/5-minute bucket.  
-- Appends results to `baseline_sales_model_prediction_log`.  
-
-### 4.2 Anomaly Classifier (inside detection transform)  
-- Compares actual vs. baseline for the same slice.  
-- If anomaly detected:  
-  - Emits row to `anomaly_classifier_model_prediction_log`.  
-  - Calculates `window_start` (best guess of true onset, may precede detection).  
-  - Records `first_detected_from` (when anomaly first noticed).  
-  - Leaves `window_end` null until closure.  
-
-### 4.3 Minority Report Generation  
-- Detection transform unifies sales, baseline, and classifier outputs into **minority reports**.  
-- Rules:  
-  - **Stable ID**:  
-    - If anomaly at store/sku within X hours → carry earliest tick’s `written_at` forward as `first_reported_at`.  
-    - Else set `first_reported_at = current written_at`.  
-    - `report_id = hash(store_id || first_reported_at)`.  
-  - **Totals**:  
-    - Actuals = ∑ sales from `sales_timeseries_data` between window_start → written_at.  
-    - Baseline = ∑ predictions over same slice.  
-  - Write MRDL row.  
-- When anomaly ceases, MEEL row is written.  
+## 4. Logic Overview  
+1. **Baseline Model** predicts expected sales.  
+2. **Anomaly Classifier** compares actuals vs baseline to detect deviations.  
+3. **Detection Transform** merges outputs:  
+   - Assigns deterministic `report_id`.  
+   - Aggregates totals (actual vs baseline) from anomaly onset to current tick.  
+   - Writes MRDL and, when the event closes, MEEL rows.
 
 ---
 
-## 5. Timing Fields  
-
-- **`first_reported_at`** → the first time the system raised an anomaly at this store/sku. Stable; anchors report_id.  
-- **`first_detected_from`** → when the anomaly was first detectable by classifier. May backfill.  
-- **`window_start`** → classifier’s best estimate of true onset.  
-- **`window_end`** → recorded in MEEL when anomaly ends.  
-
----
-
-## 6. Flow Summary  
-
-1. **Actuals** → from `sales_timeseries_data`.  
-2. **Baseline model** runs → writes to `baseline_sales_model_prediction_log`.  
-3. **Anomaly classifier** runs → writes to `anomaly_classifier_model_prediction_log`.  
-4. **Detection transform** packages all signals into minority reports →  
-   - Writes `minority_reports_detected_log`.  
-   - Writes `minority_event_ended_log` when anomaly ends.  
-5. **Downstream** → clustering, attribution, HITL.  
+## 5. Operational Flow  
+1. Sales data ingested.  
+2. Baseline model generates expected trajectory.  
+3. Classifier flags deviation.  
+4. Detection transform writes MRDL row (`report_status='detected'`).  
+5. When anomaly ends, MEEL row finalises `window_end`.  
+6. Downstream stages (clustering, attribution, HITL) consume these logs.
 
 ---
 
-## 7. Example Narrative  
-
-- 15:30: anomaly begins at Store 327.  
-- 16:00: detection transform runs:  
-  - Baseline model predicts normal sales.  
-  - Anomaly classifier detects deviation.  
-  - Logs:  
-    - baseline prediction row  
-    - anomaly classifier row (`window_start=15:30`, `first_detected_from=16:00`, `written_at=16:00`)  
-    - MRDL row with `first_reported_at=16:00`, totals for [15:30 → 16:00].  
-- 17:00: another tick. Same `report_id`. Totals updated [15:30 → 17:00].  
-- 21:00: anomaly no longer detected. Detection transform writes MEEL row with `window_end=21:00`.  
+## 6. Example Narrative  
+- **15:30:** anomaly begins at Store 327.  
+- **16:00:** detection transform runs —  
+  baseline predicts normal sales; classifier flags anomaly.  
+  MRDL row written (`first_reported_at=16:00`, totals for [15:30→16:00]).  
+- **17:00:** next tick updates totals with same `report_id`.  
+- **21:00:** anomaly ends → MEEL row written (`window_end=21:00`).  
 
 ---
 
-## 8. Schemas  
+## 7. Key Schema Summary  
+| Log | Key Fields | Notes |
+|-----|-------------|-------|
+| `baseline_sales_model_prediction_log` | `store_id`, `sku`, `timestamp`, `expected_units` | Baseline reference. |
+| `anomaly_classifier_model_prediction_log` | `store_id`, `sku`, `window_start`, `window_end`, `severity_score` | Anomaly signal. |
+| `minority_reports_detected_log` | `report_id`, `store_id`, `sku`, `window_start`, `baseline_sales_total`, `attributed_sales_total`, `report_status` | Authoritative anomaly record. |
+| `minority_event_ended_log` | `report_id`, `window_end`, `event_status` | Closure marker. |
 
-### 8.1 `baseline_sales_model_prediction_log`  
-- `store_id`  
-- `sku`  
-- `timestamp`  
-- `expected_units`  
-- `written_at`  
-- `run_id`  
+---
 
-### 8.2 `anomaly_classifier_model_prediction_log`  
-- `store_id`  
-- `sku`  
-- `window_start`  
-- `window_end`  
-- `first_detected_from`  
-- `severity_score`  
-- `impact_estimate`  
-- `written_at`  
-- `run_id`  
-
-### 8.3 `minority_reports_detected_log` (MRDL)  
-- `report_id`  
-- `store_id`  
-- `sku`  
-- `first_reported_at`  
-- `first_detected_from`  
-- `window_start`  
-- `window_end`  
-- `severity_score`  
-- `impact_estimate`  
-- `baseline_sales_total`  
-- `attributed_sales_total`  
-- `report_status`  
-- `written_at`  
-- `run_id`  
-
-### 8.4 `minority_event_ended_log` (MEEL)  
-- `report_id`  
-- `store_id`  
-- `sku`  
-- `window_end`  
-- `event_status`  
-- `written_at`  
-- `run_id`  
+**Summary:**  
+Detection transforms raw sales into structured, deterministic anomaly logs.  
+It guarantees reproducibility, append-only history, and safe downstream consumption — forming the backbone of the Minority Report System.
