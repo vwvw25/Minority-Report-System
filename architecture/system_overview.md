@@ -90,6 +90,15 @@ Identify, cluster, and attribute short-term sales anomalies in a reproducible, e
 Each dataset is append-only, typed, and reproducible.  
 Hydration merges them deterministically to materialise current state.
 
+### Identity and Lineage
+
+Each anomaly and cohort has deterministic identity keys to guarantee lineage and reproducibility.
+
+- `report_id = hash(store_id || first_detected_at)` uniquely identifies each anomaly.  
+- `report_group_id = hash(store_id || earliest_first_detected_at_in_cohort)` groups related anomalies into persistent cohorts.
+
+This ensures idempotent recomputation, consistent joins across logs, and complete auditability across all pipeline stages.
+
 ---
 
 ## 5. Governance Hooks  
