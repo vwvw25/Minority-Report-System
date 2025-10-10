@@ -66,6 +66,22 @@ Every value seen in the UI or exported dataset can be traced through these logs 
 
 ---
 
+## 5.1 Automated Decision Controls  
+
+Auto-approval is treated as a **governed automation feature**, not a default behaviour.  
+It can be enabled once model reliability and governance thresholds are met.  
+
+**Design principles:**  
+- Initially disabled until sufficient validation evidence exists.  
+- Activation requires explicit approval from governance owners.  
+- Applies only to high-confidence reports (typically ≥ 70%) in pre-defined conditions such as weekend operations.  
+- Every auto-approval is written to `ui_edits_log` with `user_role='system'`, maintaining the same audit trail as human actions.  
+- Auto-approvals appear in the UI with a governance badge and can be manually reversed.  
+
+See [`ui_workshop_notes.md`](../ui_workshop_notes.md) for the front-end workflow illustrating this behaviour.
+
+---
+
 ## 6. Replay & Audit Scenarios  
 
 **Scenario A — Rebuild a report from history**  
