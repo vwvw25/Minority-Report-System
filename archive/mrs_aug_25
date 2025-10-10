@@ -1,0 +1,2031 @@
+# Minority Report System (MRS) - Build to Apply Project Documentation
+
+*Last Updated: August 2, 2025*
+
+-----
+
+## Table of Contents
+
+1. [Section One: Project Context](#section-one-project-context)
+- [What this is for - Palantir Build to Apply](#what-this-is-for---palantir-build-to-apply)
+- [The business case](#the-business-case)
+- [Development approach](#development-approach)
+1. [Section Two: Overview Specification - Intent-First Approach](#section-two-overview-specification---intent-first-approach)
+- [1. Core intent & design philosophy](#1-core-intent--design-philosophy)
+- [2. Business outcomes & success criteria](#2-business-outcomes--success-criteria)
+- [3. Validation scenarios](#3-validation-scenarios)
+1. [Section Three: Detailed System Specification](#section-three-detailed-system-specification)
+- [System execution flow](#system-execution-flow)
+- [Processing modes](#processing-modes)
+- [Detection system](#detection-system)
+- [Enrichment & pattern matching system - t-SNE clustering](#enrichment--pattern-matching-system---t-sne-clustering)
+- [Attribution system](#attribution-system)
+- [Early attribution safeguards](#early-attribution-safeguards)
+- [Model lifecycle & drift detection](#model-lifecycle--drift-detection)
+- [Reporting & HITL system](#reporting--hitl-system)
+- [Data lineage & audit trail](#data-lineage--audit-trail)
+- [Data architecture & governance - Dual pattern for living knowledge](#data-architecture--governance---dual-pattern-for-living-knowledge)
+- [MAB/MMM integration points](#mabmmm-integration-points)
+1. [Section Four: Demo Build Approach](#section-four-mvp-build-approach)
+- [MCP Build Philosophy/Ethos](#mcp-build-philosophyethos)
+1. [Section Five: Project Progress](#section-five-project-progress)
+- [Initial Approach & Learnings](#initial-approach--learnings)
+- [Technical Decisions & Roadblocks](#technical-decisions--roadblocks)
+- [Architecture Evolution](#architecture-evolution)
+1. [Section Six: Roadmap (Known Limitations & Future Enhancements)](#section-six-roadmap-known-limitations--future-enhancements)
+- [Event-Driven Memory Recall](#event-driven-memory-recall)
+- [Predicting the rest of the sales curve](#predicting-the-rest-of-the-sales-curve)
+- [Reducing human interaction](#reducing-human-interaction)
+- [Use of Agentic AI](#use-of-agentic-ai)
+1. [Appendix](#appendix)
+- [1. Build Sheet](#1-build-sheet)
+- [2. System Architecture Diagram](#2-system-architecture-diagram)
+- [3. Data Source Map](#3-data-source-map)
+1. [Change Log](#change-log)
+
+-----
+
+## Section One: Project Context
+
+### What this is for - Palantir Build to Apply
+
+**The Minority Report System (MRS)** is an intelligence layer that continuously detects, analyses, and attributes anomalies in market activity, feeding attribution-rich insights into MMM and MAB so optimization decisions remain accurate and stable during volatility.
+
+This project is being developed for **Palantir's Build to Apply** program for the **Development Strategist** role.
+
+**Build to Apply** is Palantir's innovative hiring process that evaluates candidates through practical demonstration of their ability to solve complex business problems using Palantir's platform. Rather than traditional interviews, candidates build real solutions that showcase their technical capabilities, business acumen, and strategic thinking.
+
+**Key Innovation**: This may be one of the first Build to Apply applications to leverage Palantir's new **Model Control Protocol (MCP)** combined with **Claude Code** for development, demonstrating cutting-edge integration capabilities.
+
+**Development Environment**: Full Palantir Foundry account and instance configured specifically for this project.
+
+### The business case
+
+**Scenario**: Linda (VP of Product, Onyx Inc.) meets Estelle (VP of Marketing, CandyCo Inc.) at an exclusive Hawaii resort. Estelle shares her frustration with a failed AI platform project that was meant to answer: *"What is our best mix of TPO + marketing to ensure the highest profit in the Philippines in June?"*
+
+After both a tech consultancy and a top-four consultancy failed to deliver, the project has stalled completely.
+
+Linda connects Estelle with Palantir, who propose a platform combining:
+
+- **MMM (Marketing Mix Model)** for monthly campaign and TPO budget allocation
+- **MAB (Multi-Armed Bandit)** for daily budget optimization
+
+**The Challenge**: Ensuring MMM and MAB maintain accurate budget optimization decisions during periods of market volatility.
+
+**The Solution**: The Minority Report System - an intelligent anomaly detection and attribution system that:
+
+- Continuously detects and attributes anomalies in real-time to distinguish noise from genuine market change
+- Feeds attribution-rich anomaly intelligence into MMM/MAB to inform budget optimization decisions
+- Distinguishes temporary market noise from genuine structural change
+- Provides HITL interface for marketing stakeholders
+- Enables human input for unidentified causes (e.g., podcast mentions)
+- Validates approach using historical data to prove business value
+
+### Development approach
+
+Building using **Palantir Foundry** with the new **MCP (Model Control Protocol)** and **Claude Code** integration, creating a production-grade architecture that demonstrates sophisticated systems thinking while maintaining practical implementation efficiency.
+
+-----
+
+## Section Two: Overview Specification - Intent-First Approach
+
+### 1. Core intent & design philosophy
+
+#### 1.1 Primary purpose
+
+The Minority Report System (MRS) is a continuous intelligence layer for MMM and MAB, feeding attribution-rich anomaly insights directly into their optimisation loops. Its role is to ensure that optimisation decisions remain accurate, stable, and trusted during periods of volatility by distinguishing temporary market noise from genuine structural change.
+
+Just as security teams develop detections for known attack patterns by analyzing network logs and system behaviors, the MRS creates hypothesis-driven detections for known sales anomaly patterns by analyzing sales data, campaign spend, and contextual events. Both approaches use data signatures to distinguish between different causes - enabling teams to distinguish between a legitimate sales spike from a successful campaign versus an unexpected surge from viral social media or weather disruptions.
+
+#### 1.2 Problem statement
+
+Autonomous optimisation systems can misinterpret short-term anomalies as long-term patterns, causing:
+
+- Budget shifts based on temporary competitor or supply-chain disruptions
+- False attribution from one-off events like viral media spikes
+- Strategic drift when short-term distortions are baked into long-term models
+
+The MRS solves this by continuously detecting anomalies, attributing probable causes with confidence scores, and maintaining a living, evolving record of what happened and why.
+
+#### 1.3 Core design principles
+
+**Open Cognitive Loops – Operationalised**
+
+- Insights are not static; they can be re-evaluated as new evidence arrives.
+- Historical attributions are versioned and may be revised retroactively.
+- Implemented via:
+  - `review_reports_scheduler.py` for periodic reprocessing (MVP)
+  - Planned event-driven recall in future versions
+
+**Human-in-the-Loop as a Core Pipeline Stage**
+
+- HITL review is baked into the attribution pipeline, not treated as a post-hoc check.
+- Expert input validates novel or low-confidence anomalies, captures untracked causes, and evolves the pattern library.
+
+**Explainability and Trust**
+
+- Attribution is explainable to business stakeholders through visual cluster mapping (t-SNE Stage 2 enrichment) and evidence breakdowns.
+- Confidence scores evolve as the evidence base changes.
+
+### 2. Business outcomes & success criteria
+
+#### 2.1 Primary business outcomes
+
+- **Protected Revenue**: Prevent budget misallocations during anomalies
+- **Decision Confidence**: Stakeholders trust recommendations in volatile periods
+- **Operational Efficiency**: Reduced manual investigation time
+- **Strategic Stability**: Long-term strategies remain anchored to true market trends
+
+#### 2.2 Performance requirements (MVP-Aligned)
+
+- **Detection Speed**: Flag anomalies within ~30 min
+- **Attribution Speed**: Produce initial cause proposals within ~4 hrs
+- **Attribution Accuracy**: ≥ 80% expert-validated in MVP
+- **False Positive Control**: < 10% dismissed as noise
+- **System Reliability**: ≥ 99.5% uptime, < 4 hr recovery
+
+#### 2.3 Cross-functional value
+
+- **Executives**: Reliable anomaly intelligence for decision-making
+- **Marketing**: Confidence in MMM/MAB-driven recommendations
+- **Supply Chain**: Early visibility of market disturbances
+- **Data Science**: Stable model performance even under volatility
+
+### 3. Validation scenarios (MVP Scope)
+
+**Scenario MRS-001: Competitor Supply Disruption**
+
+- Recognised as a temporary opportunity
+- MMM/MAB maintain strategy while enabling tactical response
+- Attribution clearly marks as time-bound; system auto-resets post-event
+
+**Scenario MRS-002: Viral Content Spike**
+
+- Demand surge tagged as viral-driven, not organic trend
+- Long-term models unaffected; marketing reacts tactically
+
+**Scenario MRS-003: Localised Weather Event**
+
+- Impact ring-fenced geographically
+- National models optimise on baseline trends, unaffected by local spike
+
+### 4. Core capabilities required (MVP-Consistent)
+
+#### 4.1 Anomaly detection
+
+- Real-time stream processing on mock outcome datasets
+- Multi-dimensional deviation analysis (product, region, time)
+- Adaptive sensitivity informed by feedback loops
+
+#### 4.2 Attribution
+
+- **Stage 1**: Driver-signal correlation (mocked via lookup tables for MVP)
+- **Stage 2**: t-SNE cluster matching with pre-seeded static centroids
+- **Stage 3**: Cause proposal fusion (simplified ensemble logic in MVP)
+- **Stage 4**: HITL review and knowledge capture
+
+#### 4.3 Memory & evolution
+
+- Versioned attributions
+- Periodic reprocessing (`review_reports_scheduler.py`)
+- Pattern library evolution from HITL feedback
+
+#### 4.4 Integration
+
+- Outputs feed MMM and MAB asynchronously via API/REST
+- Integration contract mirrors final architecture in Section 3
+
+### 5. Human-system collaboration
+
+#### 5.1 Expert integration
+
+- Routed to correct domain expert queue
+- Feedback updates pattern library and scoring weights
+- HITL stage is visible in dashboard for auditability
+
+#### 5.2 Transparency
+
+- Evidence packages contain correlation data, cluster match visuals, and context
+- Confidence levels communicated clearly
+- Full override and audit capability for governance
+
+### 6. Success measurement (Synced to Section 10)
+
+**Primary Metrics**:
+
+- Protected Revenue
+- Stakeholder Decision Confidence
+- Investigation Efficiency
+- False Learning Prevention
+
+**Operational Health Metrics**:
+
+- Detection precision/recall
+- Attribution expert-validation rate
+- System uptime/recovery
+- Stakeholder satisfaction
+
+### 3. Validation scenarios
+
+**Scenario MRS-001: Competitor Supply Disruption**
+Business Context: Major competitor experiences supply chain failure, creating sudden market opportunity
+Success Criteria:
+
+- Our automated systems recognize this as temporary opportunity, not permanent market shift
+- Strategic algorithms maintain long-term focus while enabling tactical response
+- System provides clear attribution so stakeholders understand the opportunity's temporary nature
+- Post-disruption, algorithms return to pre-event optimization patterns without manual intervention
+
+**Scenario MRS-002: Viral Content Impact**
+Business Context: Unexpected viral social media content drives dramatic product demand surge
+Success Criteria:
+
+- System distinguishes viral-driven demand from organic growth signals
+- Long-term forecasting models remain unaffected by short-term noise
+- Stakeholders receive actionable insights about the viral event's business impact
+- Inventory and marketing systems can respond appropriately without long-term bias
+
+**Scenario MRS-003: Regional Weather Event**
+Business Context: Severe weather creates localized demand patterns that could mislead national algorithms
+Success Criteria:
+
+- Geographic impact is correctly identified and contained
+- National models continue optimizing based on underlying trends, not weather distortions
+- Regional response capability is enabled without compromising strategic direction
+- Weather impact is properly attributed so similar future events are handled automatically
+
+### 4. Core Capabilities Required
+
+#### 4.1 Anomaly Detection Requirements
+
+The system must detect deviations from expected patterns with:
+
+- Real-time processing of sales transaction streams
+- Multi-dimensional analysis across product, geography, and time
+- Adaptive sensitivity that learns from feedback and reduces false positives
+- Contextual awareness that considers external factors (seasonality, promotions, etc.)
+
+#### 4.2 Attribution Requirements
+
+The system must identify probable causes with:
+
+- Confidence scoring (0-1) for each proposed cause
+- Temporal correlation analysis that handles confounding variables
+- Business explainability accessible to non-technical stakeholders
+- Continuous improvement through human feedback integration
+- Multi-causal recognition when events have complex origins
+- t-SNE Clustering Identification: Projects high-dimensional feature vectors into a persistent similarity space to match anomalies against historical clusters. Supports high-confidence early attribution, allowing anomalies that fall within stable, well-attributed clusters to bypass heavier attribution stages, reducing latency and improving system resilience.
+
+#### 4.3 Memory & Evolution Requirements
+
+The system must maintain living knowledge through:
+
+- Versioned insights that track how understanding evolves
+- Retroactive reanalysis when new evidence emerges
+- Confidence updating as supporting or contradicting data arrives
+- Scope adjustment when anomaly impact becomes clearer over time
+- Persistent Pattern Space Memory: Maintains a stable t-SNE cluster map as a living memory of anomaly patterns. Cluster definitions evolve as attribution changes, enabling retroactive reanalysis and supporting the system's open cognitive loops principle.
+
+#### 4.4 Integration Requirements
+
+The system must seamlessly connect with:
+
+- Existing MAB/MMM pipelines without disrupting current operations
+- Business intelligence dashboards for stakeholder visibility
+- Alert systems that respect organizational escalation preferences
+- Audit systems that maintain regulatory compliance across markets
+
+### 5. Human-System Collaboration
+
+#### 5.1 Expert Integration Requirements
+
+- Intelligent routing of reports to appropriate domain expertise
+- Conflict resolution when experts disagree on attribution
+- Feedback loops that improve automated attribution over time
+- Escalation paths for high-impact or uncertain cases
+- Visual Cluster Exploration: Provides analysts with an interactive t-SNE map to inspect anomaly relationships, validate automated attribution, and identify emerging or novel patterns.
+
+#### 5.2 Trust & Transparency Requirements
+
+- Explainable decisions that stakeholders can understand and validate
+- Confidence communication that accurately represents system certainty
+- Override capabilities for business-critical periods
+- Audit trails that support regulatory and internal governance needs
+
+### 6. Resilience & Risk Management
+
+#### 6.1 System Resilience Requirements
+
+- Graceful degradation when components fail
+- Fallback mechanisms that maintain core protection even during outages
+- Data consistency across distributed processing components
+- Recovery procedures that restore full capability quickly
+
+#### 6.2 Business Continuity Requirements
+
+- MAB protection continues even during system maintenance
+- Alert continuity through redundant monitoring systems
+- Historical preservation of insights and decisions
+- Regional compliance with varying regulatory requirements
+
+### 7. Governance & Accountability
+
+#### 7.1 Decision Tracking Requirements
+
+- Complete audit trails of all system and human decisions
+- Version control for evolving insights and attributions
+- Accountability mapping linking decisions to responsible parties
+- Compliance automation for regulatory reporting needs
+
+#### 7.2 Quality Assurance Requirements
+
+- Continuous validation of system performance against business outcomes
+- Bias detection in algorithmic decisions
+- Performance monitoring with automated alerting for degradation
+- Regular recalibration based on changing business conditions
+
+### 8. Evolution & Learning
+
+#### 8.1 Adaptive Requirements
+
+- Threshold self-tuning based on performance feedback
+- Pattern learning from historical anomaly resolution
+- Context expansion as new data sources become available
+- Cross-market insight sharing where applicable
+
+#### 8.2 Future Capability Requirements
+
+The system architecture should enable:
+
+- Predictive anomaly detection using leading indicators
+- Cross-market correlation analysis for global businesses
+- Automated response recommendations for known anomaly types
+- Integration expansion as business needs evolve
+
+### 9. Technical Constraints & Preferences
+
+#### 9.1 Non-Negotiable Technical Requirements
+
+- Data privacy and security standards appropriate to financial data
+- Geographic compliance with regional data protection laws
+- API compatibility with existing MAB/MMM systems
+- Performance scalability to handle transaction volume growth
+
+#### 9.2 Design Philosophy (Guidance, Not Requirements)
+
+- Optimize for adaptability - the business environment changes rapidly
+- Prioritize transparency - stakeholders need to understand and trust decisions
+- Design for scale - transaction volumes and geographic scope will grow
+- Enable integration - existing systems and future tools should connect easily
+
+### 10. Success Measurement
+
+#### 10.1 Primary Success Metrics
+
+- Protected Revenue: Prevented losses from algorithmic misallocation during anomalies
+- Decision Confidence: Stakeholder trust scores during volatile periods
+- Investigation Efficiency: Time reduction in root cause analysis
+- False Learning Prevention: Measured improvement in post-anomaly algorithm performance
+
+#### 10.2 Operational Health Metrics
+
+- Detection Performance: Precision and recall for significant anomalies
+- Attribution Accuracy: Expert validation rates for proposed causes
+- System Reliability: Uptime and recovery performance
+- User Satisfaction: Feedback from business stakeholders on system value
+
+### 11. Implementation Philosophy
+
+This specification intentionally focuses on what the system must achieve rather than how it should be built. The goal is to enable maximum creativity and optimization in technical implementation while ensuring the core business intent is never compromised.
+
+The "open cognitive loops" principle should guide all architectural decisions, ensuring the system remains adaptable and continuously learning, just like human cognition handles uncertain and evolving information.
+
+Success is measured by business outcomes, not technical specifications.
+
+-----
+
+## Section Three: System Architecture Evolution & Current Implementation
+
+### Architectural Evolution: From Central Object to Log-Based Pipeline
+
+**Original Design (Intent-Preserved)**: The MRS was initially conceptualized with a central `minority_reports` object that would be updated at each pipeline stage, embodying the "open cognitive loops" principle where understanding evolves over time.
+
+**Current Implementation (Foundry-Optimized)**: The system has evolved to a pure log-based architecture that preserves all the original intent while being more Foundry-native and eliminating cycle risks. Instead of mutating a central object, each stage writes to immutable append-only logs, with read-only views providing current state to interfaces.
+
+**Why This Change**: 
+- **Cleaner Lineage**: Complete audit trail without mutation complexity
+- **Cycle Safety**: No transform reads its own output
+- **Foundry Best Practice**: Leverages platform strengths in stream processing and view composition
+- **Better Performance**: UI reads optimized views rather than joining across pipeline stages
+
+**Core Principles Preserved**:
+- **Open Cognitive Loops**: Still implemented through refresh mechanisms and re-review workflows
+- **Human-in-the-Loop**: Enhanced with cleaner separation between human and system attribution
+- **Explainability**: Maintained through comprehensive logging and view composition
+- **Living Knowledge**: Achieved through refresh loops rather than object mutation
+
+### Current System Execution Flow
+
+The MRS operates through a clear, linear pipeline with immutable logging and explicit refresh mechanisms:
+
+**Initial Detection & Attribution Pipeline**:
+1. **detect_anomalies.py** - Reads `unified_sales_data` directly, writes to `minority_reports_detected_log` (status: 1_detected)
+1. **feature_vector_cluster_match.py** - Generates feature vectors and cluster matches, writes to `minority_reports_clustered_log` (status: 2_clustered)
+1. **propose_cause_for_minority.py** - Multi-evidence attribution analysis, writes to `minority_reports_proposed_attribution_log` (status: 3_attribution_proposed)
+1. **HITL Review** - Analysts review via `proposals_latest_for_hitl` view, capture decisions in `hitl_annotations_log`
+1. **finalize_minority_reports.py** - Converts HITL decisions to `minority_reports_finalised_log` (status: 5_accepted/5_rejected/5_accepted_with_edit)
+
+**Continuous Refresh Loop (for Active Proposals)**:
+1. **build_stage3_worklist.py** - Identifies reports at status 3_attribution_proposed needing refresh, writes to `stage3_worklist`
+1. **feature_vector_cluster_match_refresh.py** - Re-runs clustering with current models, writes to `minority_reports_clustered_log_refresh`
+1. **propose_cause_refresh.py** - Re-runs attribution with latest data, writes to `minority_reports_proposed_attribution_log_refresh`
+
+**UI Data Sources (Read-Only Views)**:
+- **proposals_union** - Union of initial and refresh attribution logs
+- **proposals_latest_for_hitl** - Latest proposal per report with geographic enrichment for HITL interface
+- **reports_latest_all_statuses** - Current status view for browsing and history
+
+### Processing Modes
+
+**Real-Time Components**:
+- Anomaly detection from `unified_sales_data` (<30 minute latency)
+- Stage 3 worklist building (every 40-60 seconds in demo)
+- HITL decision processing
+
+**Refresh Components**:
+- Feature vector and clustering refresh (following worklist)
+- Attribution refresh with latest contextual data
+- Re-review scheduling for finalized reports (monthly/quarterly cadence)
+
+### Event Lifecycle Management
+
+**Event Start & Scope Definition**: 
+When `detect_anomalies.py` finds an anomaly, it back-dates to find the true start time and defines scope parameters:
+
+```json
+{
+  "minority_report_id": "uuid",
+  "sku_list": ["sku_001", "sku_002"],
+  "store_list": ["store_123", "store_456"], 
+  "region": "Yorkshire",
+  "city": "Leeds",
+  "start_timestamp": "2025-08-01 12:30:00",
+  "detection_timestamp": "2025-08-01 14:00:00",
+  "deviation_threshold": 2.0,
+  "persistence_period_hours": 4,
+  "minimum_event_duration_hours": 2
+}
+```
+
+**Event Closure Detection**:
+`detect_anomalies.py` applies continuous monitoring using these scope parameters:
+
+```
+if (
+    abs(current_deviation) < original_detection_threshold
+    AND 
+    all_sales_within_baseline for persistence_period_hours  
+    AND 
+    event_duration > minimum_event_duration_hours
+) then {
+    write_to_minority_event_ended_log
+}
+```
+
+### Detection System - Enhanced Model Architecture
+
+The detection system operates with multiple specialized model artifacts that provide comprehensive anomaly identification and classification.
+
+**Model Components**:
+1. **baseline_sales_model**: Predicts expected sales values for each SKU/store/time combination
+2. **anomaly_classifier_model**: Classifies deviations as anomaly/normal with severity scoring and confidence
+
+**Detection Process** (`detect_anomalies.py`):
+1. Reads `unified_sales_data` directly (with optional demo configuration)
+2. Calls `baseline_sales_model` to get expected values and statistical metrics
+3. Calls `anomaly_classifier_model` to classify deviations and assign severity
+4. Writes to `minority_reports_detected_log` with comprehensive metadata
+5. Logs model predictions to respective prediction logs for drift monitoring
+
+**Enhanced Detection Log Schema**:
+```json
+{
+  "report_id": "uuid",
+  "version": "integer", 
+  "store_id": "string",
+  "sku": "string",
+  "window_start": "timestamp",
+  "window_end": "timestamp", 
+  "written_at": "timestamp",
+  "run_id": "string",
+  "status": "1_detected",
+  "baseline_expected": "float",
+  "z_score": "float", 
+  "residual": "float",
+  "anomaly_type": "enum",
+  "severity": "enum[low,medium,high,critical]",
+  "classifier_confidence": "float",
+  "detected_at": "timestamp"
+}
+```
+
+**Back-Dating & Scope Definition**: When anomalies are detected, the system analyzes historical patterns to identify true event start times and defines monitoring scope parameters for ongoing closure detection.
+
+**Event Closure Monitoring**: Continuous application of closure logic using the same baseline and classifier models that detected the original anomaly. When closure criteria are met, events are logged to `minority_event_ended_log` for audit and downstream processing.
+
+### Enrichment & Pattern Matching System - Enhanced Model Artifacts
+
+**System Architecture**: The enrichment system uses multiple versioned Model Artifacts with comprehensive prediction logging for drift monitoring and performance tracking.
+
+#### Cluster Comparison Model
+
+**Purpose**: Generate statistical feature vectors from anomaly time-series and match against known cluster centroids representing historical anomaly patterns.
+
+**Enhanced Processing** (`feature_vector_cluster_match.py`):
+1. Reads `minority_reports_detected_log` and `unified_sales_data`
+2. Extracts time-series segments using scope parameters
+3. Generates comprehensive feature vectors
+4. Calls `cluster_comparison_model` for pattern matching
+5. Logs predictions to `cluster_comparison_model_prediction_log`
+
+**Enhanced Clustering Log Schema**:
+```json
+{
+  "report_id": "uuid",
+  "version": "integer",
+  "store_id": "string", 
+  "sku": "string",
+  "window_start": "timestamp",
+  "window_end": "timestamp",
+  "written_at": "timestamp",
+  "run_id": "string", 
+  "status": "2_clustered",
+  "feature_vector": "array[float]",
+  "cluster_id": "string",
+  "cluster_name": "string", 
+  "similarity": "float",
+  "tsne_x": "float",
+  "tsne_y": "float"
+}
+```
+
+**Model Routing & Fallback**:
+- Optional `model_routing_config` controls mock vs. real model selection
+- Per-report quality scoring with automatic fallback to mock version
+- Comprehensive logging of routing decisions and fallback usage
+
+**Refresh Capability**: `feature_vector_cluster_match_refresh.py` re-runs clustering on reports identified by `stage3_worklist`, writing to `minority_reports_clustered_log_refresh` to show evolving pattern understanding.
+
+#### Role in Attribution Pipeline
+
+**High-confidence cluster matches** (similarity ≥ 0.8) can bypass heavy attribution stages, providing:
+- **Speed**: Fast attribution for known patterns
+- **Resilience**: Partial attribution if downstream stages fail  
+- **Transparency**: Visual cluster explanations for stakeholders
+- **Memory**: Persistent pattern library that evolves with validated attributions
+
+### Attribution System - Multi-Stage Evidence Fusion with Enhanced Logging
+
+The attribution system combines multiple evidence sources through a structured pipeline with comprehensive model prediction logging for drift monitoring.
+
+#### Attribution Model & Process
+
+**Attribution Model**: Deterministic rule-based model (v0-mock) with upgrade path to machine learning ensemble trained on HITL feedback.
+
+**Enhanced Processing** (`propose_cause_for_minority.py`):
+1. Reads latest clustering results from `minority_reports_clustered_log`
+2. Joins with `contextual_events`, `all_campaign_performance_data`, and `minority_event_ended_log`
+3. Calls `attribution_model` for evidence fusion and cause ranking
+4. Writes proposals to `minority_reports_proposed_attribution_log`
+5. Logs predictions to `attribution_model_prediction_log`
+
+**Multi-Source Evidence Integration**:
+- **Driver Signal Correlation**: Temporal joins with campaign spend, competitor actions, weather events
+- **Cluster Pattern Context**: Leverages cluster-specific attribution weights
+- **Event Closure Status**: Considers whether related events have ended
+- **Business Rules**: Applies domain-specific constraints and logic
+
+**Enhanced Attribution Log Schema**:
+```json
+{
+  "report_id": "uuid",
+  "version": "integer",
+  "store_id": "string",
+  "sku": "string", 
+  "window_start": "timestamp",
+  "window_end": "timestamp",
+  "written_at": "timestamp",
+  "run_id": "string",
+  "status": "3_attribution_proposed",
+  "proposed_cause": "string",
+  "confidence": "float",
+  "supporting_evidence": "json",
+  "alternative_causes": "json"
+}
+```
+
+#### Continuous Refresh Mechanism
+
+**Refresh Process** (`propose_cause_refresh.py`):
+- Reads refresh clustering results from `minority_reports_clustered_log_refresh`
+- Re-runs attribution with latest contextual data and campaign information
+- Writes to `minority_reports_proposed_attribution_log_refresh`
+- Shows evolution of attribution confidence as new evidence arrives
+
+**Benefits**:
+- Demonstrates how understanding evolves with new data
+- Preserves original attribution for audit comparison
+- Enables confidence tracking over time
+- Supports "open cognitive loops" principle through evidence evolution
+
+### Early attribution safeguards
+
+**Bypass Criteria** (Stage 2 → Stage 4):
+
+- Cluster confidence ≥0.8
+- Cluster has ≥10 historical members with validated attributions
+- Cluster attribution consistency ≥90%
+- No conflicting driver signals in Stage 1
+
+**Immediate Response Framework** (Evolves Over Time):
+
+**Phase 1 (MVP)**: All anomalies route to human review for validation and learning
+**Phase 2**: High-confidence known patterns (≥0.85) bypass HITL and feed directly to MAB/MMM
+**Phase 3**: Most patterns auto-attributed, humans handle novel/low-confidence cases only
+
+```json
+"immediate_response_criteria": {
+  "high_confidence_known_patterns": "auto_feed_to_mab_mmm",
+  "novel_unknown_patterns": "escalate_to_human_review", 
+  "conflicting_signals": "require_human_arbitration",
+  "business_critical_impact": "always_human_review"
+}
+```
+
+**Risk Controls**:
+
+- Maximum 20% of anomalies can use bypass in any period
+- All bypassed attributions logged for post-hoc validation
+- Automatic bypass suspension if accuracy drops below 85%
+- Monthly review of cluster definitions
+- **Confidence thresholds increase automatically** as pattern library matures
+
+### Model Lifecycle & Drift Detection - Comprehensive Prediction Logging
+
+**Integrated Model Artifacts & Monitoring**
+
+The MRS implements comprehensive model lifecycle management through systematic prediction logging and drift detection across all model artifacts.
+
+**1. baseline_sales_model**
+* **Purpose**: Predict expected sales/performance values and provide statistical metrics for anomaly detection
+* **Inference Location**: `detect_anomalies.py`
+* **Prediction Logging**: All calls logged to `baseline_sales_model_prediction_log`
+* **Training Trigger**: Scheduled quarterly re-fitting + drift-triggered retraining
+
+**2. anomaly_classifier_model**
+* **Purpose**: Classify deviations as anomaly/normal with severity scoring and confidence levels  
+* **Inference Location**: `detect_anomalies.py`
+* **Prediction Logging**: All calls logged to `anomaly_classifier_model_prediction_log`
+* **Training Trigger**: Performance degradation or false positive/negative rate increases
+
+**3. cluster_comparison_model**
+* **Purpose**: Match feature vectors against stored cluster centroids for pattern recognition
+* **Inference Location**: `feature_vector_cluster_match.py` and `feature_vector_cluster_match_refresh.py`
+* **Prediction Logging**: All calls logged to `cluster_comparison_model_prediction_log`
+
+**4. attribution_model**
+* **Purpose**: Evidence fusion and cause ranking with confidence scoring
+* **Inference Location**: `propose_cause_for_minority.py` and `propose_cause_refresh.py`
+* **Prediction Logging**: All calls logged to `attribution_model_prediction_log`
+* **Training Trigger**: HITL feedback accumulation and attribution accuracy monitoring
+
+**Prediction Log Schema** (Standard across all models):
+```json
+{
+  "model_name": "baseline_sales_model",
+  "model_version": "v2.1",
+  "report_id": "uuid",
+  "inference_timestamp": "timestamp",
+  "input_parameters": "json",
+  "prediction_output": "json", 
+  "quality_score": "float",
+  "run_id": "string"
+}
+```
+
+**Drift Monitoring Workflow**:
+1. **Prediction Capture**: Every model call generates prediction log entry
+2. **Ground Truth Collection**: HITL decisions and event outcomes provide validation data
+3. **Performance Calculation**: Join prediction logs with ground truth for accuracy metrics
+4. **Threshold Monitoring**: Automated alerts when performance degrades beyond configured limits
+5. **Retraining Triggers**: Platform ML Ops handles model updates based on drift signals
+
+### Reporting & HITL System - View-Based Interface Architecture
+
+**Interface Data Sources**: The HITL system operates on read-only views that automatically surface the latest attribution proposals without requiring transforms to maintain "current state" objects.
+
+**Primary UI Data Source**: `proposals_latest_for_hitl` view
+- Union of `minority_reports_proposed_attribution_log` and `minority_reports_proposed_attribution_log_refresh`
+- Filters to latest proposal per (report_id, version) with status = '3_attribution_proposed'
+- LEFT JOIN with store_data → city_data for geographic enrichment
+- Shows only reports actively awaiting human review
+
+**Optional Browse/History**: `reports_latest_all_statuses` view
+- Latest status per report across all pipeline stages
+- Enables historical review and status tracking
+
+#### HITL Process Flow (Updated for Log Architecture)
+
+1. **Queue Population**: `proposals_latest_for_hitl` view automatically shows latest attribution proposals
+2. **Analyst Review**: Expert examines evidence package (correlations, cluster matches, contextual signals)
+3. **Decision Capture**: Analyst action recorded in `hitl_annotations_log` referencing specific proposal row
+4. **Finalization**: `finalize_minority_reports.py` reads annotations and writes to `minority_reports_finalised_log`
+5. **Queue Update**: Report disappears from queue view on next refresh cycle
+6. **Refresh Integration**: Approved reports may re-enter refresh cycle for continuous learning
+
+#### Human Attribution Handling & Cadence Reviews
+
+**Human Attribution Handling (Runtime)**
+* When a human creates a contextual event, it is logged in `contextual_events_human_log` with all relevant fields.
+* The primary purpose is to capture human judgement where the system has no strong non-spend cause (e.g., system attributes anomaly to campaign spend, human identifies "podcast mention" instead).
+* The report is **not** re-attributed by the system at this stage. The human event is stored in **human attribution fields** on the report.
+* Human attribution fields are completely separate from system attribution fields.
+* Only a human action can change or remove the values in the human attribution fields.
+* Human events are cross-referenced with contextual_events during audit to check if they were already considered and dismissed, but this does not block entry.
+* Human-created events are also used as labelled examples for training attribution and clustering models, but are never used as runtime inputs to those models.
+
+**Cadence Re-Review (Scheduled)**
+* Reports are periodically re-reviewed on a defined cadence (e.g., every 6 months).
+* On re-review, attribution and clustering models run **from system data only** — human-created events are not passed into the models at runtime.
+* The models produce new **system attribution fields** for the report.
+* **On scheduled re-reviews, the system re-attributes from data. Human attributions are stored in separate fields and preserved. Model re-attribution does not overwrite prior human fields. Only humans can overwrite prior human fields.**
+* In the HITL interface during cadence reviews, any existing human attribution is displayed alongside the new system attribution for context.
+* The audit process evaluates the validity and impact of past human attributions — whether they improved explanatory quality, matched timing/geography, and aligned with subsequent evidence.
+
+**Re-Review Implementation**:
+- `build_rereview_worklist.py` identifies finalized reports meeting re-review criteria (time-based, confidence thresholds)
+- Re-review reports feed into same refresh pipeline (cluster + attribution refresh)
+- Human attribution fields preserved and displayed alongside new system proposals
+
+#### User Roles & Permissions
+
+The system implements role-based access control to ensure appropriate separation of concerns:
+
+| Role | Capabilities |
+|------|-------------|
+| **Marketer** | Review, approve/reject attribution, add context |
+| **Data Scientist** | Investigate anomalies, re-run models, override logic |
+| **Admin/Ops** | Manage workflows, escalate, manage cadence |
+
+**Role-Specific Interfaces**:
+
+1. **Marketer View**: Simplified attribution review interface reading from `proposals_latest_for_hitl`
+2. **Data Scientist View**: Full pipeline visibility accessing all log datasets and prediction logs
+3. **Admin/Ops View**: Workflow monitoring via worklist datasets and model routing controls
+
+**Contextual Event Builder**:
+
+The system enforces structured data capture through a guided form:
+
+```
+Event Type: [Dropdown: Social Media | Traditional Media | Weather | Competitor | Retail | Supply Chain | Other]
+    ↓
+Subtype: [Dynamic dropdown based on type]
+    ↓
+Required Fields (vary by type):
+- Platform/Channel: [e.g., TikTok, BBC, Store Name]
+- Location: [City/Region selector]
+- Date/Time: [DateTime picker with range option]
+- Evidence URL: [Validated URL field]
+    ↓
+Optional Fields:
+- Reach/Impressions: [Number]
+- Severity/Impact: [Low/Medium/High]
+- Description: [Text, max 500 chars]
+```
+
+This eliminates vague rejections like "I think it was weather" and requires:
+"Weather > Severe Storm > Leeds > 2025-08-01 14:00 > news.bbc.co.uk/storm-leeds"
+
+### Post-Closure Reopen Flow
+
+The system supports reopening closed reports while maintaining strict audit compliance - a critical requirement for enterprise deployments where new information may emerge after initial closure.
+
+#### Reopen Requirements & Audit Trail
+
+When a user (e.g., Lucy from Marketing) needs to reopen a previously closed report, the system enforces structured capture to maintain audit integrity:
+
+**1. Mandatory Reopen Documentation**:
+```json
+{
+  "minority_report_id": "uuid",
+  "reopened_by": "user_id",
+  "reopened_timestamp": "timestamp",
+  "reopened_reason": "enum[new_evidence, attribution_error, additional_context, regulatory_request]",
+  "reopened_notes": "string (required, min 50 chars)",
+  "linked_event_ids": ["uuid"] // Optional contextual events
+}
+```
+
+**2. Processing Options**:
+
+The reviewer must choose one of two paths:
+
+- **"Update Attribution Manually"** 
+  - Direct attribution override with justification
+  - Creates manual attribution record
+  - No system reprocessing
+  
+- **"Request Reprocessing"**
+  - Triggers full re-run of `propose_cause_for_minority.py`
+  - System generates new attribution with current data
+  - Maintains algorithmic integrity
+
+**3. Audit Trail Design**:
+
+All reopened reports generate:
+- New `hitl_annotations_log` entry with `reopened = true`
+- New `minority_reports_proposed_attribution_log` row (even for manual updates)
+- Flags indicating post-closure modification:
+  - `manual_post_review_edit = true` (for manual updates)
+  - `attribution_override_post_review = true` (for direct overrides)
+  - `system_reprocessing_post_closure = true` (for algorithmic re-runs)
+
+**4. Benefits of This Design**:
+
+- **Clear Separation**: Routine approvals vs. exception handling
+- **Complete Auditability**: Every change tracked with context
+- **Regulatory Compliance**: Demonstrates when and why closed reports were modified
+- **Pattern Recognition**: Identifies reports requiring frequent reopening
+- **Process Improvement**: Highlights gaps in initial review process
+
+#### Implementation in the Pipeline
+
+```
+Closed Report → User Requests Reopen
+    ↓
+Reopen Documentation Form (required fields)
+    ↓
+Choice: Manual Update vs. System Reprocessing
+    ↓
+If Manual:
+  - Create hitl_annotations_log entry
+  - Create minority_reports_proposed_attribution_log entry
+  - Update minority_reports status
+    ↓
+If Reprocessing:
+  - Route to propose_cause_for_minority.py
+  - Full attribution pipeline with new context
+  - Return to HITL for final approval
+    ↓
+Both paths: Full audit trail with reopen context
+```
+
+This design ensures that post-closure modifications are:
+- Exceptional rather than routine
+- Fully documented and justified
+- Traceable for compliance purposes
+- Distinguishable from initial processing
+
+The separation between initial review and post-closure reopening maintains the integrity of the original process while accommodating real-world needs for updating understanding as new information emerges.
+
+**Complete Traceability Architecture**:
+
+- `minority_reports_finalised_log`: Versioned history of all reports and attribution changes
+- `tagging_audit_log`: Links between anomalies, proposals, and final attributions
+- `attribution_confidence_history`: Evolution of confidence scores over time
+- `human_decision_log`: All HITL inputs with reasoning and timestamps
+- `minority_report_evaluations`: Automated event completion with timestamps and reasoning
+
+**Preservation Strategy**:
+
+- Immutable event records with append-only updates
+- Version control for attribution changes
+- Full decision provenance from detection to final report
+- Regulatory-compliant audit trails
+
+### Data architecture & governance - Dual pattern for living knowledge
+
+The MRS implements a sophisticated dual data pattern that enables both strict audit compliance and the "open cognitive loops" principle:
+
+#### Why both patterns are necessary
+
+**Immutable Pipeline Objects** (`minority_reports_detected_log` → `minority_reports_clustered_log` → `minority_reports_proposed_attribution_log` → `minority_reports_finalised_log`):
+
+- Creates an audit trail showing exactly what the system knew at each stage
+- Proves what data/logic led to each decision
+- Essential for regulatory compliance and debugging
+- Shows the "thinking process" of the system
+
+**Central Living Object** (`minority_reports` in ontology):
+
+- Represents current understanding of each anomaly
+- Created/updated once at pipeline completion
+- Enables the "memory reconsolidation" principle through scheduled reprocessing
+- Links to all historical versions
+
+#### Implementation architecture
+
+```
+Linear pipeline creates immutable trail:
+detect_anomalies.py → minority_reports_detected_log → 
+feature_vector_cluster_match → minority_reports_clustered_log → 
+propose_cause_for_minority.py → minority_reports_proposed_attribution_log →
+finalize_minority_reports.py → minority_reports_finalised_log
+                                        ↓
+                                minority_reports (ontology - created/updated)
+
+Open cognitive loops through scheduled reprocessing:
+review_reports_scheduler.py runs on a daily/weekly cadence
+    ↓
+Selects historical reports to re-evaluate (both open and closed)
+    ↓
+Sends these reports back through the entire pipeline above
+    ↓
+Pipeline processes them with current models, patterns, and knowledge
+    ↓
+If the new understanding differs from previous, updates the ontology object
+
+Active monitoring creates closure events:
+stream_update_listener.py → tags sales data → 
+detect_anomalies.py → minority_reports_closed_log →
+review_reports_scheduler.py → updates minority_reports (ontology) with closure status
+```
+
+**Key Design Decisions**:
+
+1. **Single ontology update**: The ontology object is only written once per pipeline run (at the end), not updated at each intermediate stage
+1. **Clean separation**: The pipeline focuses purely on processing and creating audit trails, while the ontology represents our current conclusions
+1. **Memory reconsolidation through reprocessing**: The review scheduler periodically sends historical reports back through the entire pipeline. When processed with newer models and patterns, this may generate different attributions or confidence scores, allowing the system to update its understanding of past events based on new knowledge
+
+This architecture provides:
+
+- Complete audit trail (immutable datasets show historical processing)
+- Living knowledge that evolves (ontology reflects current understanding)
+- True "open cognitive loops" (periodic reprocessing with new knowledge)
+- Clear lineage for any regulatory review
+
+This design mirrors neuroscience principles where memories aren't constantly updating but are periodically recalled and can be modified during that recall - exactly what `review_reports_scheduler.py` implements.
+
+### HITL Rejection & Contextual Event System
+
+The system transforms attribution rejections from dead-ends into knowledge-building opportunities through structured contextual event capture.
+
+#### Contextual Events Library Architecture
+
+**1. Event Taxonomy**:
+
+```
+Weather
+├── Severe Storm (flooding, wind damage)
+├── Heat Wave (>30°C for 3+ days)
+├── Snow/Ice (transport disruption)
+└── Natural Disaster (earthquake, etc.)
+
+Social Media
+├── TikTok Viral (organic trend)
+├── Instagram Trend (hashtag movement)
+├── Twitter Discussion (controversy/support)
+└── Platform Algorithm Change
+
+Traditional Media
+├── TV Coverage (news, documentary)
+├── Radio Mention (talk show, ad)
+├── Print Article (newspaper, magazine)
+└── Online News (major outlet coverage)
+
+Competitor Action
+├── Price Change (increase/decrease)
+├── Product Launch (new SKU)
+├── Supply Disruption (stockout)
+└── Marketing Campaign (major push)
+
+Retail Event
+├── Store Promotion (untracked)
+├── Display Change (prominence)
+├── Staff Recommendation (word-of-mouth)
+└── Local Partnership (community event)
+```
+
+**2. Event Data Model**:
+
+```json
+{
+  "event_id": "uuid",
+  "event_type": "enum[weather, social_media, traditional_media, competitor_action, retail_event, supply_chain, other]",
+  "event_subtype": "string (from taxonomy)",
+  "platform_channel": "string (required for media events)",
+  "location": {
+    "city": "string",
+    "region": "string",
+    "country": "string",
+    "coordinates": "optional[lat, lng]"
+  },
+  "temporal": {
+    "start_timestamp": "timestamp",
+    "end_timestamp": "optional[timestamp]",
+    "timezone": "string"
+  },
+  "evidence": {
+    "primary_url": "string",
+    "supporting_urls": ["string"],
+    "screenshots": ["file_id"]
+  },
+  "impact_metrics": {
+    "reach": "optional[integer]",
+    "severity": "optional[enum[low, medium, high]]",
+    "confidence": "float (0-1)"
+  },
+  "created_by": "user_id",
+  "created_at": "timestamp",
+  "usage_count": "integer (times referenced)"
+}
+```
+
+**3. Rejection → Event → Re-attribution Flow**:
+
+```
+Reviewer clicks "Reject Attribution"
+    ↓
+Modal: "Why is this attribution incorrect?"
+    ↓
+Option 1: Search existing events (autocomplete)
+Option 2: "Create New Event" button
+    ↓
+If new event:
+  - Event builder form (type → subtype → details)
+  - Validation ensures all required fields
+  - System generates event_id
+    ↓
+System links event to minority_report
+    ↓
+Automatic trigger: propose_cause_for_minority.py
+  - Includes new event as primary driver
+  - Original data still available
+    ↓
+New attribution proposal generated
+    ↓
+Returns to reviewer with comparison view
+```
+
+**4. Knowledge Accumulation Benefits**:
+
+- **Pattern Recognition**: Similar events become selectable for future rejections
+- **Attribution Improvement**: System learns event → anomaly correlations
+- **Reduced Friction**: Common events need only be defined once
+- **Quality Control**: Structured data prevents lazy rejections
+
+This design ensures every rejection contributes to system intelligence rather than just dismissing proposals.
+
+**Direct Integration**:
+
+- **Output**: `minority_reports_finalised_log` dataset
+- **Consumers**:
+  - MAB daily allocation optimizer (async feed)
+  - MMM monthly planning module (batch integration)
+- **Interface**: REST API with webhook notifications for high-priority anomalies
+
+**How MRS Enhances Optimization**:
+
+- Provides attribution context for budget adjustments
+- Flags temporary vs structural market changes
+- Enables tactical response without strategic drift
+- Maintains algorithm stability during volatility
+
+**Integration Contract**:
+
+```json
+{
+  "anomaly_id": "uuid",
+  "detection_time": "timestamp",
+  "attribution": {
+    "primary_cause": "competitor_stockout",
+    "confidence": 0.85,
+    "temporary": true,
+    "expected_duration_days": 5
+  },
+  "recommendation": "maintain_strategy",
+  "impact_assessment": {
+    "affected_skus": ["sku1", "sku2"],
+    "revenue_opportunity": 50000
+  }
+}
+```
+
+-----
+
+## Section Four: Mocked Model Build Approach
+
+### MCP Build Philosophy/Ethos
+
+**Core Principle**: Build the full architecture exactly as designed to demonstrate production-grade systems thinking, with strategic mocking for implementation efficiency.
+
+**Mocked Model Focus**
+
+The Mocked Model will:
+
+* Show the full architecture, including the complete pipeline and ontology.
+* Show plausible objects and fields so the system appears populated and working.
+* Show the Workshop interface (HITL) as the analyst touchpoint.
+
+The emphasis is on design completeness and realistic presentation of enterprise-grade architecture, not on delivering a fully functioning anomaly‑detection engine.
+
+**Key Implementation Philosophy**
+
+The way we're mocking, every mocked element:
+
+* **Keeps its real place** in the architecture, so the pipeline still looks and feels production‑grade.
+* **Produces plausible outputs** that match what a real model/transform would emit.
+* **Keeps the retraining loop in place**, so you can still describe lifecycle, drift detection, and feedback even if the learning isn't real yet.
+* **Avoids breaking the append‑only / multi‑row per ID logic** for minority_reports, so the HITL still works like it would in production.
+
+The key is that we're **mocking the intelligence, not the structure** — Palantir will still see the full enterprise‑grade workflow.
+
+We're keeping the **full real architecture** Palantir would expect, with all the datasets, transforms, governance, retraining workflows, and monitoring hooks in place. But the "brain" inside the models is currently simulated so it looks like it's running without actually training and serving ML models.
+
+**Implications for the Mocked Model:**
+
+* Closure logic will be represented by a small set of pre‑tagged "evaluated" objects.
+* Streaming ingestion will be simulated by loading batches so objects appear populated.
+* Models will present plausible output fields without full implementation.
+* The "Real" vs "Mock" split in the build sheet will favour **Mock** for components requiring significant engineering effort.
+
+**Primary areas of focus:**
+
+1. **Pipeline view** – All transforms, datasets, and model artifacts should be present in the pipeline.
+2. **Dataset fields** – Pre‑populate with realistic column names, data types, and a small set of representative sample rows.
+3. **Workshop interface** – Show correct fields and intended interaction flow, even if static.
+
+**Mocked Model Scope (Refined)**:
+
+**Build Fully (Real Implementation)**:
+
+- Anomaly detection with real statistical analysis
+- Feature vector generation and clustering
+- t-SNE projection with pre-seeded clusters
+- HITL review interface and workflow
+- Complete audit trail and data lineage
+
+**Mock Strategically (Architecture Preserved)**:
+
+- Driver signal correlations (use lookup tables)
+- Ensemble scoring logic (weighted averages)
+- Confidence evolution (pre-defined curves)
+- Some external data feeds (static CSVs)
+
+**Removed from Mocked Model** (Overcomplexity):
+
+- Tagged sales data (redundant with minority reports)
+- Multiple correlation algorithms (one is sufficient)
+- Complex re-scoring mechanisms (simple updates only)
+
+**Success Criteria**: Demonstrates sophisticated architectural thinking and clear upgrade path without unnecessary implementation complexity.
+
+### Feature Vector & t-SNE Implementation Strategy
+
+**Dimensionality Reduction Choice: t-SNE vs UMAP**
+
+For the mock demo with small, hand-crafted datasets that need visually clear clusters, **t-SNE is the safer pick**. It produces more visually separated clusters which are easier to explain to stakeholders and more reliable for demo purposes.
+
+If building a real production attribution engine at scale, the system would lean toward **UMAP** for better computational efficiency, preservation of global structure, and handling of larger datasets.
+
+**1. Feature vector generation (real)**
+
+* **Yes, code runs for this** — but it's straightforward statistical processing, not heavy ML training.
+* You'll implement:
+
+   * Shape extraction from anomaly time series.
+   * Basic statistical feature calculation.
+   * Optional simple PCA/DCT compression.
+
+* This can be done entirely in Python in feature_vector_cluster_match.
+* Output: a real 16‑dimensional vector per anomaly that you could actually cluster later.
+
+**2. Cluster matching (real)**
+
+* Again, no training loop here — just **compare your generated vector to a small set of pre‑seeded cluster centroids**.
+* Centroids can be:
+
+   * Hand‑picked from mock/historical examples.
+   * Stored in a dataset (your "cluster library").
+
+* Use a real similarity measure (cosine similarity or Euclidean distance).
+* Output: closest cluster, similarity score.
+
+**3. t‑SNE visualisation (static)**
+
+* You do **not** run t‑SNE live in the Mocked Model — too heavy and slow for streaming use.
+* Instead:
+
+   * Pre‑compute a t‑SNE projection from your seeded cluster library (and a few sample anomalies).
+   * Save the coordinates and display them in the dashboard.
+   * New events can be plotted at approximate positions (optional) or just linked to their cluster visually.
+
+* This keeps the "wow" factor for Palantir reviewers without the runtime cost.
+
+**So in short:**
+
+* **the Mocked Model's cluster model is real in terms of behaviour** — it genuinely turns anomalies into vectors and matches them to clusters.
+* **you're not training a model live** — you're using seeded data and lightweight math.
+* That's exactly what you want for a Palantir‑style demonstration: shows full architectural intent, but is build‑time‑friendly.
+
+### Cluster Comparison Model – Mocked Model Realism Checklist
+
+**1. Feature Vector Generation (real)**
+
+✅ **Implement for real** — lightweight enough to code in feature_vector_cluster_match.
+
+* **Shape extraction**: select fixed anomaly window (look‑back + look‑forward).
+* **Resample** to fixed number of points (e.g., 30).
+* **Normalise** to focus on shape, not absolute size.
+* **Statistical features**: rise slope, decay slope, peak location, symmetry, kurtosis, volatility.
+* **Optional compression**: PCA or DCT for curve shape.
+* **Output**: fixed‑length vector (e.g., 16‑dimensional).
+
+🎯 **Goal:** If you feed the same anomaly twice, you get the same vector.
+This lets you truthfully say "We really generate high‑dimensional feature vectors."
+
+**2. Cluster Matching (real)**
+
+✅ **Implement for real** — minimal compute cost.
+
+* **Cluster library**:
+
+   * 4–6 clusters seeded with realistic example feature vectors.
+   * Give each a name and cause label.
+
+* **Similarity search**:
+
+   * Cosine similarity or Euclidean distance.
+   * Return closest match + similarity score.
+
+* **Confidence threshold**:
+
+   * Mark as "low confidence" if similarity < set threshold (e.g., 0.75).
+
+🎯 **Goal:** Real comparisons so scores vary — not every anomaly matches perfectly.
+
+**3. t‑SNE Visualisation (mocked, static)**
+
+⚪ **Mock for Mocked Model** — run offline once, store results.
+
+* Run t‑SNE **outside the live pipeline** (e.g., Jupyter).
+* Project your seeded cluster library + a few example anomalies into 2D.
+* Save coordinates in a Foundry dataset.
+* Display in dashboard.
+
+🎯 **Goal:** Looks like a live similarity map, but no runtime cost.
+
+**4. Data & Behaviour Realism**
+
+* **Plausible mock anomalies**:
+
+   * Create curves that look like real viral events, competitor drops, trade promotions, etc.
+
+* **Cluster separation**:
+
+   * Ensure seeded clusters have visibly different shapes so similarity scores aren't all ~0.9+.
+
+* **Occasional "unknown"**:
+
+   * Ensure some anomalies fall below confidence threshold to show the "unknown" path works.
+
+**5. Explainability Hooks**
+
+* Store **feature vector values** for each anomaly in the dataset.
+* Store **similarity score** + **matched cluster ID**.
+* These can be shown in HITL view for analyst transparency.
+
+**6. Mocked Model Development Effort**
+
+* **Real code**: Feature vector generation + similarity scoring (lightweight).
+* **One‑off offline work**: Generate seeded clusters + t‑SNE coordinates.
+* **Mock data realism**: Create realistic example anomalies to populate cluster library.
+
+### Update Patterns in the Mocked Model
+
+In the Mocked Model, two update patterns will be used:
+
+**1. Continuous Updates**
+Metrics that can be calculated directly from unified_sales_data — such as sales graphs, revenue totals, and rolling KPIs — will refresh continuously. These do not require changes to minority_reports; they simply re‑query the sales feed and recalculate values for any sales matching the parameters of a minority report.
+
+**2. Cadenced Updates**
+Information that requires appending or modifying minority_reports or minority_report_proposals — such as the current attribution (with confidence scores), t‑SNE mapping, and whether a report is open or closed — will update on a short, scheduled cadence. These updates run as transforms that produce a new version of the dataset each time they execute.
+
+This ensures real‑time‑like visibility for sales metrics, while attribution and status fields remain current enough for operational decision‑making without incurring the cost of constant dataset rewrites.
+
+### Demo Reset System - Run ID Architecture
+
+**Optional Demo Control Mechanism**: The MRS implements a sophisticated run ID system that enables clean demo resets without data loss, crucial for Build to Apply presentations.
+
+**Run ID Implementation**:
+- All pipeline datasets include `run_id` field
+- `demo_run_config` contains single row with current active `run_id`
+- All views filter by current `run_id` automatically
+- Transform outputs inherit current `run_id` from config
+
+**Core Reference Datasets with Run ID**:
+```json
+{
+  "unified_sales_data": "date_time, store_id, sku, units, run_id",
+  "contextual_events": "event_id, event_type, platform, event_name, start_timestamp, end_timestamp, url, run_id", 
+  "all_campaign_performance_data": "date_time, channel, sku, store_id, spend, run_id"
+}
+```
+
+**Pipeline Logs with Run ID**: All immutable logs (`minority_reports_detected_log`, `minority_reports_clustered_log`, etc.) carry `run_id` to enable temporal partitioning.
+
+**Demo Reset Process**:
+1. Update `demo_run_config.run_id` to new value
+2. All views automatically filter to new run ID
+3. Pipeline processes fresh data in new run context
+4. Previous run data preserved for audit
+5. UI shows clean slate immediately
+
+**Benefits**:
+- **Instant Demo Reset**: Change one value, entire demo resets
+- **Audit Preservation**: All historical runs remain accessible
+- **Zero Data Loss**: Previous demos preserved for analysis
+- **Clean Presentation**: Reviewers see fresh state without old artifacts
+
+**View Filtering Example**:
+```sql
+-- proposals_latest_for_hitl automatically filters by current run_id
+SELECT * FROM proposals_union p
+JOIN demo_run_config c ON p.run_id = c.run_id  
+WHERE p.report_status = '3_attribution_proposed'
+```
+
+This architecture enables confident demo delivery where any technical issues can be quickly resolved through run ID advancement, maintaining professional presentation flow during Build to Apply reviews.
+
+3. **detect_anomalies.py**
+
+   * Reads sales_data and minority_reports (for active report parameters).
+   * Runs baseline_sales_model to detect new anomalies or detect event completion for active anomalies.
+   * Directly updates minority_reports status when closure conditions are met.
+   * Writes:
+
+      * minority_reports_detected_log → scope definitions and metadata.
+      * baseline_sales_model_prediction_log → for model monitoring.
+      * minority_report_evaluations → optional audit trail for closure events.
+
+4. **minority_reports_detected_log**
+
+   * Feeds directly into feature_vector_cluster_match.
+   * In your current design there is **no generate_minority_reports.py**, so detected reports effectively *are* the initial formal reports.
+
+5. **feature_vector_cluster_match**
+
+   * Takes minority_reports_detected_log and sales_data.
+   * Uses minority report parameters to extract relevant time-series segments from sales data.
+   * Creates feature vectors from the extracted sales patterns.
+   * Runs cluster_comparison_model to assign seeded cluster matches.
+   * Outputs:
+
+      * minority_reports_clustered_log → for attribution.
+      * cluster_comparison_model_prediction_log → for drift monitoring.
+
+6. **propose_cause_for_minority.py**
+
+   * Reads minority_reports_clustered_log + all_campaign_performance_data + contextual_events + sales_data.
+   * Uses minority report parameters to correlate sales patterns with driver signals.
+   * Seeds attribution results (mocked for Mocked Model).
+   * Outputs:
+
+      * minority_reports_proposed_attribution_log (dataset) → for HITL review.
+      * minority_report_proposals (model artifact) → for governance.
+      * attribution_model_prediction_log → for drift monitoring.
+
+7. **HITL Interface**
+
+   * Displays minority_reports_proposed_attribution_log to reviewers.
+   * Captures feedback into hitl_annotations_log.
+
+8. **finalize_minority_reports.py**
+
+   * Combines minority_reports_proposed_attribution_log + hitl_annotations_log
+   * If action = "reject":
+     - Validates linked_event_id exists
+     - Marks report for re-attribution with contextual event
+     - Routes back to propose_cause_for_minority.py
+   * If action = "approve":
+     - Finalizes report with current attribution
+   * Outputs:
+     - minority_reports → final status
+     - minority_reports_finalised_log → change history
+     - contextual_events → updated usage counts
+
+9. **review_reports_scheduler.py**
+
+   * Reads minority_reports.
+   * Flags approved reports for selective reprocessing.
+   * Feeds them back into feature_vector_cluster_match for cluster re-matching or attribution updates.
+
+### External Dependencies & Platform Boundaries
+
+**External Data Inputs**
+
+* Treat **all_campaign_performance_data** and **contextual_events** as **inputs from other systems** rather than something you have to build ingestion/transformation logic for inside this Mocked Model.
+* Declare them as **unified, structured datasets** that are *created elsewhere in the platform*.
+* In your build sheet, they will be **Dataset/Object** type with **Mocked Model Status = Real** if you can pre‑populate them, but their population process will be **out of scope** for your Mocked Model.
+
+This keeps propose_cause_for_minority.py simple:
+
+* It just **joins to these datasets** and uses them for correlation/scoring.
+* No need to own ingestion/normalisation in this project.
+
+**Platform Governance Outputs**
+
+The system focuses on its core value proposition: "We detect minority events, enrich them, attribute causes, allow human review, and preserve an auditable history."
+
+**In-scope for Mocked Model:**
+- Detection, enrichment, attribution, HITL review, audit logs
+
+**Out-of-scope for Mocked Model:**
+- Automated retrain request governance flows
+- Model retrain approval workflows  
+- Detailed model retrain logging
+
+**Platform Integration Approach:**
+
+The system emits retrain requests and drift metrics in the standard governance format. The review, approval, and execution of retraining is handled by the platform's central model governance workflow. This keeps lifecycle management consistent across all Foundry-hosted models while allowing this system to focus on its core attribution and enrichment logic.
+
+Finalised minority reports are consumed by the platform's marketing optimisation services. These services adjust active MAB allocations and retrain MMM using cleansed datasets, preventing false learning from short‑term anomalies.
+
+**Palantir precedent**
+
+* On large projects, the anomaly detection layer is kept clean and independent.
+* Any "optimisation loop" or "model retrain" step is handled by a **different product area** so it can evolve independently.
+
+You're essentially saying:
+
+"This Mocked Model assumes these datasets already exist in the platform, maintained by other pipelines. This service consumes them for attribution and produces standard governance outputs for platform consumption."
+
+-----
+
+## Section Five: Project Progress
+
+### Initial Approach & Learnings
+
+**Original Plan**:
+
+1. Provide intent-first spec to Claude Code
+1. Collaborative Q&A to refine approach
+1. Adapt build based on emerging ideas
+1. Create claude.md reference file
+
+**What Happened**:
+
+- Claude Code asked good initial questions
+- The resulting claude.md revealed significant gaps:
+  - Missing key neuroscience-driven review/update features
+  - Failed to synthesize updates into coherent vision
+  - Oversimplified system design
+  - Misunderstood Build to Apply requirements (built small/working vs demonstrating systems thinking)
+
+**Key Learning**: Claude Code approached as if maintaining full context wasn't effective. Need persistent, updateable documentation that any AI agent can reference.
+
+**Current Status**: Pivoting to maintain this document as living single source of truth, updateable by any Claude instance, ensuring consistent understanding across all development sessions.
+
+### Technical Decisions & Roadblocks
+
+**Key Architectural Decisions**:
+
+1. **Linear pipeline over parallel processing** - Simpler to debug and validate
+1. **t-SNE as enrichment not core** - Maintains flexibility for other attribution methods
+1. **Immutable event records** - Enables full audit trail without complexity
+1. **Async MAB/MMM integration** - Decouples systems for stability
+
+**Resolved Issues**:
+
+- Removed redundant tagged_sales_data concept
+- Clarified real-time vs batch processing boundaries
+- Simplified attribution to 4 clear stages
+- Established clear bypass criteria with safeguards
+
+### Architecture Evolution
+
+**From Initial Design to Current**:
+
+- Evolved from "protection system" to "intelligence enhancement system"
+- Clarified t-SNE as one stage in multi-stage pipeline
+- Added explicit HITL as core design principle
+- Simplified MVP scope while maintaining sophistication
+
+**Open Cognitive Loops Implementation**:
+
+- `review_reports_scheduler.py` runs daily to re-evaluate all reports
+- Confidence scores update when new driver data arrives
+- Attribution changes tracked in versioned audit logs
+- Pattern library evolves through HITL feedback
+
+-----
+
+## Section Six: Roadmap (Known Limitations & Future Enhancements)
+
+### Platform-Wide Attribution Evolution
+
+**Reframing MRS as the Comprehensive Attribution Engine**
+
+A key architectural insight emerges from the MRS design: the attribution logic in `propose_cause_for_minority.py` performs fundamentally the same work as a platform-wide attribution model, just scoped to anomalous periods.
+
+**Current State**:
+- **Standard Attribution Model**: "For every sale, how much credit goes to each channel?"
+- **MRS Attribution**: "For every anomalous sales cluster, is the uplift due to campaign spend or external factors?"
+
+**Future Evolution**: The MRS could serve as the attribution engine for the entire platform because:
+
+**Unified Attribution Logic**:
+- Both baseline and anomalous sales use the same evidence sources (campaign data, contextual events, temporal correlation)
+- The statistical techniques for attribution remain consistent across normal and anomalous periods
+- Driver signal analysis applies equally to expected and unexpected sales patterns
+
+**Architectural Benefits**:
+- **Single Source of Truth**: One attribution engine for all sales, eliminating model inconsistencies
+- **Continuous Learning**: Anomaly attribution insights improve baseline attribution accuracy
+- **Unified Confidence Scoring**: Consistent attribution confidence across all sales periods
+- **Simplified Platform**: Eliminates separate MMM attribution components
+
+**Implementation Path**:
+```
+Phase 1 (Current): MRS handles anomalous sales only
+Phase 2: Extend MRS to handle "normal" sales during anomalous periods  
+Phase 3: MRS becomes platform attribution engine for all sales
+Phase 4: MAB/MMM consume MRS attribution for all optimization decisions
+```
+
+**Technical Considerations**:
+- Scale `propose_cause_for_minority.py` logic to handle full sales volume
+- Extend clustering to include "baseline" patterns alongside anomaly patterns
+- Unify confidence scoring methodology across anomalous and normal periods
+- Integrate with existing MAB/MMM workflows for seamless transition
+
+This evolution would transform the MRS from an anomaly detection system into the comprehensive attribution intelligence layer for the entire platform, providing consistent, confidence-scored attribution for every sale while maintaining the sophisticated anomaly handling capabilities that make it unique.
+
+### Event-Driven Memory Recall
+
+The current implementation uses periodic reprocessing via `review_reports_scheduler.py`, which is more akin to batch processing than true cognitive recall. This represents a conscious MVP trade-off between implementation complexity and demonstrating core capabilities.
+
+#### Current limitation
+
+In biological memory systems:
+
+- Memories are recalled when **triggered by relevant stimuli** (seeing something similar, related context, new information that conflicts)
+- Not on arbitrary schedules like "every Tuesday at 3pm"
+
+The current architecture has `review_reports_scheduler.py` running on a cadence, which is more like a batch job than true cognitive recall.
+
+#### Future enhancement: Event-driven recall
+
+A more cognitively-aligned architecture would implement **event-driven recall triggers**:
+
+1. **New pattern discovered**: When a novel anomaly gets attributed, trigger recall of similar historical reports
+1. **Confidence drift**: When attribution confidence for current events differs significantly from similar past events
+1. **Model updates**: When t-SNE clusters reorganize or new driver signals are added
+1. **Contradictory evidence**: When new data contradicts previous attributions
+1. **Related anomaly**: When processing an anomaly in the same category/region/timeframe
+
+#### Implementation examples
+
+```
+feature_vector_cluster_match detects: "This anomaly is similar to MR-142 from last month"
+    → Triggers: recall and reprocess MR-142
+    
+New attribution shows: "Competitor stockout in Region A"  
+    → Triggers: recall all Region A reports from past 90 days
+    
+Cluster reorganization: "TikTok viral" cluster splits into two patterns
+    → Triggers: recall all reports previously in that cluster
+
+Pattern confidence changes: "Holiday shopping" pattern confidence drops below 60%
+    → Triggers: recall all reports attributed to holiday patterns this season
+
+New driver signal added: "Podcast advertising spend" data source integrated
+    → Triggers: recall reports from periods with known podcast campaigns
+```
+
+#### Benefits of event-driven approach
+
+This enhancement would create true "open cognitive loops" where:
+
+- Similar patterns trigger re-evaluation of related historical events
+- New knowledge automatically propagates to relevant past conclusions
+- The system exhibits more brain-like associative memory
+- Computational resources focus on reports most likely to change
+- The system becomes genuinely adaptive rather than just periodic
+
+For the MVP, periodic reprocessing provides the core capability while maintaining implementation simplicity. However, event-driven recall remains a key architectural goal that would elevate the system from a sophisticated batch processor to a truly cognitive system.
+
+### Predicting the rest of the sales curve
+
+**Predictive Event Analytics & Visualization**
+
+While the minority event is ongoing, the system could predict what the rest of the sales curve is likely to look like, including estimated end date/time and total revenue impact.
+
+**Core Capabilities**:
+- **Event Duration Prediction**: Estimate when the current anomaly will return to baseline using curve fitting and historical pattern analysis
+- **Revenue Impact Forecasting**: Calculate total expected revenue uplift/decline for the complete event lifecycle
+- **Confidence Intervals**: Provide uncertainty bounds around predictions based on similar historical events
+
+**Interface Enhancements**:
+- **Extended Timeseries Visualization**: Sales graphs in the HITL interface would show actual data as solid lines and predicted continuation as dotted lines
+- **Impact Summary Cards**: Display predicted total impact, estimated end time, and confidence levels
+- **Scenario Modeling**: Allow analysts to see how predictions change based on different intervention scenarios
+
+**Technical Implementation**:
+Using Matlab or similar curve-fitting techniques to model the decay/continuation patterns of ongoing events, drawing from the cluster library of similar historical events to inform prediction accuracy.
+
+Reference: http://youtube.com/watch?v=5ChEy3lIqMQ
+
+### Reducing human interaction
+
+Reducing human interaction in approving reports by gradually lowering the confidence threshold for human intervention.
+note humans would still be able to view and edit reports if they choose to.
+
+### Use of Agentic AI
+
+**Evolutionary Path: From Reactive Analysis to Proactive Intelligence**
+
+The current MRS analyzes what happened and attributes causes. The next evolution would introduce agentic AI capabilities that investigate why events occurred and predict what might happen next.
+
+**Proactive Investigation Agents**:
+- **Hypothesis Generation**: AI agents that propose novel theories beyond known patterns by analyzing correlation gaps and unexplained variance
+- **Evidence Gathering**: Autonomous agents that search additional data sources (social media, news feeds, competitor intelligence) to validate or refute hypotheses  
+- **Experimental Design**: Agents that design A/B tests or market experiments to validate causal theories
+- **Pattern Library Evolution**: Self-learning systems that identify emerging patterns and expand the cluster library independently
+
+**Implementation Vision**:
+```
+Current: Anomaly → Pattern Match → Human Attribution → Learning
+Future: Anomaly → Multi-Agent Investigation → Hypothesis Testing → Autonomous Learning
+```
+
+This would transform the MRS from a sophisticated detection system into a genuinely intelligent market research platform that continuously expands its understanding of cause-and-effect relationships in market dynamics.
+
+### HITL Session Management
+
+Future implementation to prevent HITL from refreshing minority report while its open (e.g., if someone already has minority report open in HITL only refresh data if attribution confidence has shifted >10% or cluster assignment changed).
+
+### Detection Engineering Integration
+
+**Adopting Security Best Practices for Market Anomaly Detection**
+
+Drawing from Palantir's Alerting and Detection Strategy (ADS) Framework, the MRS could evolve to incorporate proven detection engineering principles that emphasize quality over quantity and rigorous validation processes.
+
+**Enhanced Detection Lifecycle Management**:
+- **Hypothesis-Driven Development**: Each anomaly detection rule begins with a clear hypothesis about market behavior patterns, similar to how security detections target specific attack vectors
+- **Rigorous Testing & Validation**: Pre-deployment testing using historical data and synthetic anomaly injection, mirroring security teams' lab validation processes
+- **Peer Review Process**: All detection logic reviewed by multiple analysts before production deployment
+- **Performance Metrics**: Continuous tracking of detection precision, recall, and business impact to prevent "alert fatigue" equivalent
+
+**ADS-Inspired Documentation Template for Market Detections**:
+```
+Goal: What specific market anomaly pattern is this detection designed to identify?
+Business Context: How does this anomaly map to known market disruption scenarios?
+Detection Logic: High-level summary of the statistical/ML approach
+Technical Implementation: Data sources, thresholds, and processing logic
+Blind Spots: Where could this detection fail or miss edge cases?
+False Positives: What benign market activities might trigger this detection?
+Validation: How was this detection tested and validated?
+Priority: Business impact classification and escalation criteria
+Response Playbook: Step-by-step analyst actions when anomaly detected
+```
+
+**Quality-First Detection Philosophy**:
+- **Precision Over Volume**: Better to have 10 high-confidence anomaly detections than 100 noisy alerts
+- **Documentation as Force Multiplier**: Every detection rule fully documented for analyst understanding
+- **Continuous Improvement**: Regular review and tuning based on business outcomes
+- **Cross-Team Collaboration**: Marketing, data science, and operations teams collaborate on detection development
+
+This approach would elevate the MRS from a sophisticated monitoring system to an enterprise-grade market intelligence platform that applies proven detection engineering principles to business anomaly identification.
+
+### Advanced Model Operations
+
+**Model Routing & Version Control**: Dynamic model version switching and intelligent fallback mechanisms for production resilience.
+
+A `model_routing_config` table would enable toggling models between mock and real versions without code changes. This system would provide:
+
+- **Fast Upgrades**: Switch from rule-based mock to trained models instantly
+- **Quality-Based Fallback**: Automatic fallback to mock version if real model underperforms on individual reports
+- **A/B Testing**: Percentage-based routing splits for gradual model rollouts
+- **Zero-Downtime Deployment**: Model updates without service interruption
+
+This would enable sophisticated model lifecycle management where the system automatically maintains high performance through intelligent routing while providing complete audit trails of all routing decisions.
+
+### Enterprise Notification Sidecar
+
+**Real-Time Stakeholder Communication**: Automated notification system for critical anomalies and attribution updates.
+
+**Sidecar Architecture Components**:
+- `notifications_outbox`: Queue of pending notifications with targeting and priority
+- `notifications_sent_log`: Audit trail of all sent communications  
+- `build_notifications_outbox.py`: Transform to generate notifications from finalized reports
+- `send_notifications.py`: Delivery engine with multiple channels (email, Slack, SMS)
+
+**Smart Notification Logic**:
+- **Priority-Based Routing**: Critical anomalies trigger immediate alerts; routine reports use scheduled summaries
+- **Stakeholder Targeting**: Geographic and category-based routing to relevant domain experts
+- **Escalation Workflows**: Automatic escalation if high-priority anomalies remain unaddressed
+- **Delivery Confirmation**: Read receipts and acknowledgment tracking
+
+**Integration Pattern**:
+The notification sidecar operates independently of the core MRS pipeline, reading from `minority_reports_finalised_log` and `minority_event_ended_log` to generate targeted communications. This ensures notification logic doesn't interfere with detection and attribution processing while providing real-time stakeholder updates.
+
+**Value Proposition**: 
+Ensures anomaly intelligence reaches the right stakeholders at the right time with appropriate urgency, closing the loop from detection to business action without adding complexity to the core pipeline.
+
+-----
+
+## Appendix
+
+### 1. Build Sheet
+
+The MRS Build Sheet identifying system components: https://docs.google.com/spreadsheets/d/1suk1tCPYevoxzDgqt7TQGvGOr-6E0RuaszZ1vtDpqS0/edit?gid=0#gid=0
+
+### 2. System Architecture Diagram
+
+```mermaid
+flowchart LR
+  %% ===== Reference & Config =====
+  subgraph REF[Reference & Config]
+    CITY[city_data]
+    STORE[store_data]
+    CE[contextual_events]
+    DEMO[demo_run_config]
+    CAMP[all_campaign_performance_data]
+    SLMAP[cluster_label_map (opt)]
+  end
+  %% ===== Core Input =====
+  SALES[unified_sales_data]
+  %% ===== Detection =====
+  DA[detect_anomalies.py]
+  DLOG[minority_reports_detected_log]
+  BASELOG[baseline_sales_model_prediction_log]
+  ACLLOG[anomaly_classifier_model_prediction_log]
+  SALES --> DA
+  DEMO --> DA
+  DA --> DLOG
+  DA --> BASELOG
+  DA --> ACLLOG
+  DA --> END[minority_event_ended_log]
+  %% ===== Initial Cluster =====
+  CL1[feature_vector_cluster_match.py]
+  CLOG[minority_reports_clustered_log]
+  CCPLOG[cluster_comparison_model_prediction_log]
+  DLOG --> CL1
+  SALES --> CL1
+  SLMAP -. viz coords .- CL1
+  CL1 --> CLOG
+  CL1 --> CCPLOG
+  %% ===== Initial Attribution =====
+  AT1[propose_cause_for_minority.py]
+  PLOG[minority_reports_proposed_attribution_log]
+  AMPLOG[attribution_model_prediction_log]
+  CLOG --> AT1
+  CE --> AT1
+  CAMP --> AT1
+  AT1 --> PLOG
+  AT1 --> AMPLOG
+  %% ===== Views (read-only) =====
+  subgraph VIEWS[Views (no cycles)]
+    PU[proposals_union]
+    PL[proposals_latest_for_hitl]
+    RL[reports_latest_all_statuses]
+  end
+  PLOG --> PU
+  PR --> PU  %% include refresh proposals in union
+  STORE --> PL
+  CITY --> PL
+  BASELOG --> PL  %% added: baseline predictions used to compute impact_to_date
+  PU --> PL
+  %% reports_latest_all_statuses pulls from ALL status logs
+  DLOG --> RL
+  CLOG --> RL
+  CR --> RL
+  PLOG --> RL
+  PR --> RL
+  FLOG --> RL
+  END --> RL
+  %% ===== Stage 3 Worklist (Refresh Gate) =====
+  WL[build_stage3_worklist.py]
+  S3[stage3_worklist]
+  PLOG --> WL
+  WL --> S3
+  %% ===== Refresh Cluster =====
+  CL2[feature_vector_cluster_match_refresh.py]
+  CR[minority_reports_clustered_log_refresh]
+  S3 --> CL2
+  SALES --> CL2
+  CL2 --> CR
+  CL2 --> CCPLOG
+  %% ===== Refresh Attribution =====
+  AT2[propose_cause_refresh.py]
+  PR[minority_reports_proposed_attribution_log_refresh]
+  CR --> AT2
+  CE --> AT2
+  CAMP --> AT2
+  AT2 --> PR
+  AT2 --> AMPLOG
+  AT2 --> END  %% events can end during refresh cycles too
+  %% ===== HITL & Finalisation =====
+  HITL[(HITL UI)]
+  HAL[hitl_annotations_log]
+  FIN[finalize_minority_reports.py]
+  FLOG[minority_reports_finalised_log]
+  PL --> HITL
+  HITL --> HAL
+  HAL --> FIN
+  FIN --> FLOG
+  %% ===== Re-review (Optional) =====
+  RRW[build_rereview_worklist.py]
+  RR[rereview_worklist]
+  FLOG --> RRW
+  PR --> RRW  %% (optional) latest refresh proposals for context
+  RRW --> RR
+  RR -.-> S3  %% optional: feed re-review items back into refresh pipeline
+  %% Styling
+  classDef ref fill:#eef,stroke:#446;
+  class CITY,STORE,CE,DEMO,CAMP,SLMAP,SALES ref;
+  classDef logs fill:#fef6e7,stroke:#a66;
+  class DLOG,BASELOG,ACLLOG,CLOG,PLOG,CR,PR,CCPLOG,AMPLOG,S3,HAL,FLOG,END,RR logs;
+  classDef views fill:#eaf7ea,stroke:#4a944a;
+  class VIEWS,PU,PL,RL views;
+```
+
+### 3. Data Source Map
+
+**Legend**:
+
+- 🟢 Drives Demo Logic = Mock dataset feeding anomaly detection + attribution
+- ⚪ Placeholder = Exists in ontology for completeness but not used in demo
+
+#### Outcome Signals (Anomaly Detection Targets)
+
+|Dataset                |Status|Core Fields                                             |
+|-----------------------|------|--------------------------------------------------------|
+|POS Sales              |🟢     |date, time, store_id, sku, units_sold, revenue, promo_id|
+|E-commerce Transactions|🟢     |date, time, channel, sku, units_sold, revenue, promo_id |
+|Inventory Sell-Through |⚪     |date, store_id, sku, stock_on_hand, sell_through_rate   |
+|Customer Engagement    |⚪     |date, customer_id, loyalty_points, redemptions          |
+
+#### Driver Signals - Marketing & Advertising
+
+|Dataset                 |Status|Core Fields                                                                |
+|------------------------|------|---------------------------------------------------------------------------|
+|TV Ad Spend             |🟢     |date, region, city, spend, reach                                           |
+|Digital Campaign Spend  |🟢     |date, campaign_id, ad_id, channel, region, city, spend, impressions, clicks|
+|Programmatic Advertising|🟢     |date, campaign_id, region, city, spend, impressions, conversions           |
+|In-Store Retail Media   |🟢     |date, retailer, store, city, region, spend, impressions                    |
+|Influencer Partnerships |🟢     |date, influencer, platform, region, city, impressions, engagement_rate     |
+|Email/SMS Campaigns     |🟢     |date, campaign_id, region, city, send_count, open_rate, click_rate         |
+
+#### Driver Signals - Trade & Promotions
+
+|Dataset               |Status|Core Fields                                                       |
+|----------------------|------|------------------------------------------------------------------|
+|Trade Promotions (TPO)|🟢     |date, retailer, store, city, region, discount_pct, sku, promo_type|
+|Product Launches      |🟢     |date, sku, category, marketing_spend, region, city                |
+
+#### Driver Signals - External Events
+
+|Dataset                 |Status|Core Fields                                                  |
+|------------------------|------|-------------------------------------------------------------|
+|Competitor Actions      |🟢     |date, competitor, action_type, region, city, spend           |
+|Supply Chain Disruptions|🟢     |date, supplier, issue_type, affected_region, city, delay_days|
+
+#### Internal Driver Signals (MMM/MAB)
+
+|Dataset            |Status|Core Fields                                                                 |
+|-------------------|------|----------------------------------------------------------------------------|
+|TPO_data           |🟢     |month, campaign_id, promo_type, city, region, sku, allocated_budget         |
+|campaign_data      |🟢     |month, campaign_id, promo_type, channel, region, city, allocated_budget     |
+|campaign_allocation|🟢     |date, campaign_id, promo_type, channel, region, city, daily_allocated_budget|
+
+#### Contextual Signals
+
+|Dataset             |Status|Core Fields                                               |
+|--------------------|------|----------------------------------------------------------|
+|Weather Data        |🟢     |date, location, city, temperature, rainfall               |
+|Natural Disasters   |🟢     |date, location, city, type                                |
+|News Feeds          |🟢     |date, headline, category, region, city                    |
+|Social Media Trends |🟢     |date, platform, topic, sentiment, region, city            |
+|Calendar Events     |🟢     |date, event_name, event_type, region, city                |
+|Store Profile Data  |🟢     |store_id, store, format, region, city, demographic_profile|
+|Regional Market Data|🟢     |region, city, metric, value                               |
+
+### Current Data Flow (Enhanced Log-Based Architecture)
+
+**Initial Detection & Attribution Pipeline**
+
+`unified_sales_data` (with run_id) → `detect_anomalies.py` 
+    ↓ [calls baseline_sales_model + anomaly_classifier_model]
+    ↓ [writes to minority_reports_detected_log with enhanced schema]
+    ↓ [status: 1_detected]
+
+`minority_reports_detected_log` + `unified_sales_data` → `feature_vector_cluster_match.py`
+    ↓ [calls cluster_comparison_model]  
+    ↓ [writes to minority_reports_clustered_log with feature vectors + t-SNE coordinates]
+    ↓ [status: 2_clustered]
+
+`minority_reports_clustered_log` + `contextual_events` + `all_campaign_performance_data` + `minority_event_ended_log` → `propose_cause_for_minority.py`
+    ↓ [calls attribution_model]
+    ↓ [writes to minority_reports_proposed_attribution_log]
+    ↓ [status: 3_attribution_proposed]
+
+**Model Prediction Logging (Parallel to Pipeline)**
+- `detect_anomalies.py` → `baseline_sales_model_prediction_log` + `anomaly_classifier_model_prediction_log`
+- `feature_vector_cluster_match.py` → `cluster_comparison_model_prediction_log`
+- `propose_cause_for_minority.py` → `attribution_model_prediction_log`
+
+**HITL Review Process**
+`proposals_latest_for_hitl` view (union + geographic enrichment + run_id filtering) → HITL Interface
+    ↓
+HITL decisions → `hitl_annotations_log`
+    ↓
+`finalize_minority_reports.py` → `minority_reports_finalised_log` (status: 5_accepted/5_rejected/5_accepted_with_edit)
+
+**Continuous Refresh Loop (for Active Proposals)**
+`build_stage3_worklist.py` → `stage3_worklist` (identifies reports needing refresh based on run_id)
+    ↓
+`feature_vector_cluster_match_refresh.py` → `minority_reports_clustered_log_refresh`
+    ↓
+`propose_cause_refresh.py` → `minority_reports_proposed_attribution_log_refresh`
+    ↓
+`proposals_union` view → updated `proposals_latest_for_hitl` → HITL sees evolved attribution
+
+**Event Closure Detection**
+`detect_anomalies.py` continuously monitors active reports using scope parameters
+    ↓
+When closure criteria met → `minority_event_ended_log`
+
+**Optional Re-Review (for Finalized Reports)**
+`build_rereview_worklist.py` → `rereview_worklist` (scheduled re-analysis with run_id context)
+    ↓
+Feeds into same refresh pipeline → side-by-side human vs. updated system attribution
+
+**Demo Reset Capability**
+Update `demo_run_config.run_id` → All views filter to new run → Clean demo state with audit preservation
+
+**Enhanced Architecture Features**:
+- **Comprehensive Model Logging**: All model artifacts log predictions for drift monitoring
+- **Run ID Partitioning**: Complete demo reset capability without data loss
+- **Enhanced Schemas**: Rich metadata in detection and clustering logs
+- **Geographic Enrichment**: Automatic coordinate inclusion via view joins
+- **Routing & Fallback**: Model version control with quality-based fallback
+- **Complete Lineage**: Every decision traceable through enhanced log progression
+
+### 5. Model Retraining Governance Flow
+
+**Model Retraining Governance Flow in Your System**
+
+1. **Prediction Logging**
+
+   * detect_anomalies.py writes prediction records to **baseline_sales_model_prediction_log**.
+   * feature_vector_cluster_match writes prediction records to **cluster_comparison_model_prediction_log**.
+   * propose_cause_for_minority.py writes prediction records to **attribution_model_prediction_log**.
+
+2. **Outcome Logging**
+
+   * HITL review outcomes and confirmed anomaly records are written to **minority_reports**.
+   * These records contain ground truth for model evaluation.
+
+3. **Drift Evaluation**
+
+   * **evaluate_model_drift.py** reads:
+     - Prediction logs from all models
+     - Ground truth from minority_reports and minority_reports_finalised_log
+   * Calculates drift metrics (accuracy, precision, recall, etc.)
+   * Writes results to **model_drift_metrics**.
+
+4. **Threshold Checking**
+
+   * **check_drift_thresholds.py** reads model_drift_metrics
+   * Compares against predefined thresholds in configuration
+   * If thresholds exceeded, writes to **model_retrain_request**.
+
+5. **Retraining Workflow**
+
+   * Platform ML Ops monitors model_retrain_request
+   * Triggers review dashboard for human approval
+   * Upon approval, retraining pipeline executes
+   * New model versions deployed to model registry
+
+-----
+
+## Change Log
+
+### August 2, 2025
+- Consolidated full documentation into single artifact
+- Clarified MVP scope and mocking strategy
+- Added detailed data flow diagrams
+- Specified platform integration boundaries
+
+### August 1, 2025
+- Refined open cognitive loops implementation
+- Added event-driven memory recall to roadmap
+- Clarified t-SNE role as enrichment stage
+
+### July 31, 2025
+- Initial documentation structure
+- Defined core business case and architecture
+- Established Build to Apply context
