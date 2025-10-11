@@ -42,7 +42,7 @@ The goal is to ensure anomaly detection, clustering, attribution, and hydration 
 
 ## 4. Lateness, Replay, and Exactly-Once
 
-- **Watermarks by design** — all logs may arrive late; hydrate always picks the latest by `written_at`.  
+- **Watermarks by design** — all logs may arrive late; ate always picks the latest by `written_at`.  
 - **Safe replays** — append-only outputs + stable keys mean detection or attribution can rerun safely.  
 - **Dedup on write** — each transform ends with `.dropDuplicates([key columns])` to enforce idempotence.  
 
