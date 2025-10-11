@@ -68,8 +68,8 @@ It captures the end-to-end lineage between transforms, datasets, and user interf
 | **minority_reports** | `minority_reports` *(view)* | `hydrate_minority_reports.py` | UI, API | Hydrated, latest-per-report object for user interface. |
 | **minority_events_log** | `minority_events_log` *(view)* | `hydrate_minority_reports.py` | UI, API | Wide event-level aggregation for event dashboards. |
 | **MRRW** | `minority_reports_rereview_worklist` | `build_rereview_worklist.py` | rereview_cluster_reports.py | Queue of reports eligible for rereview. |
-| — | `minority_reports_clustered_rereview_log` | `rereview_cluster_reports.py` | rereview_propose_cause.py, Hydration | Rerun clustering results for historical low-confidence reports. |
-| — | `minority_reports_proposed_attribution_rereview_log` | `rereview_propose_cause.py` | Hydration | Updated attribution results after rereview pass. |
+| **MRCRL** | `minority_reports_clustered_rereview_log` | `rereview_cluster_reports.py` | rereview_propose_cause.py, Hydration | Rerun clustering results for historical low-confidence reports. |
+| **MRPARL** | `minority_reports_proposed_attribution_rereview_log` | `rereview_propose_cause.py` | Hydration | Updated attribution results after rereview pass. |
 
 ---
 
