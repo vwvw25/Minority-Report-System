@@ -14,6 +14,10 @@ All downstream clustering, attribution, and hydration depend on these logs.
 - **`sales_timeseries_data`** — observed sales by store × SKU × time.  
 - **`demo_run_config`** — provides `run_id`.  
 
+The detection stage assumes pre-integrated, clean sales data is available as `unified_sales_data`.  
+This upstream dataset is produced by other platform components responsible for collating, deduplicating, and standardising retailer sales from brick-and-mortar stores.  
+The Minority Report System does not perform ETL or data cleaning — it consumes `unified_sales_data` to construct time-series datasets (`sales_timeseries_data`) for anomaly detection.
+
 ---
 
 ## 3. Outputs  
