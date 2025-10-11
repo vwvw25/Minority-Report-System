@@ -143,7 +143,28 @@ This guarantees that **finalised rows always exist** while clearly signalling wh
 
 ---
 
-## 10. Monitoring, SLOs, and Guardrails
+## 10. Future Enhancement: Event-Driven Recall
+
+The MVP currently reprocesses reports on a fixed cadence via `review_reports_scheduler.py`.  
+A future enhancement replaces this batch pattern with **event-driven recall triggers**, creating truly cognitive “open loops”:
+
+**Recall Triggers**  
+1. New pattern discovered → recall similar past anomalies.  
+2. Confidence drift detected → recall prior reports in same cluster.  
+3. Model updates or new data sources → recall affected historical records.  
+4. Contradictory evidence → re-evaluate past attributions automatically.  
+
+**Example**  
+> When a “TikTok Viral” cluster splits into two new sub-clusters, all historical reports in that cluster are re-evaluated.
+
+**Benefits**  
+- Continuous self-correction of understanding.  
+- Resource-efficient: only relevant history is reprocessed.  
+- Mimics associative recall in human cognition.
+
+---
+
+## 11. Monitoring, SLOs, and Guardrails
 
 ### SLIs
 - Freshness per log: `max(now() - max(written_at))`.  
