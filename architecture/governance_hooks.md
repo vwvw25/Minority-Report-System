@@ -60,7 +60,7 @@ Every value seen in the UI or exported dataset can be traced through these logs 
 - **Schema versioning:** controlled via transform contracts — new fields only appended, never removed.  
 - **Access control:** governed at dataset level (RBAC) — write access restricted per stage.  
 - **Human-in-the-loop governance:**  
-  - Analyst actions logged in `ui_edits_log`.  
+  - Analyst actions logged in `ui_edits_log` and 'edit_minority_event_object_log'.  
   - `annotation_id` binds user actions to data provenance.  
 - **Operational validation:** health views and SLIs monitor coverage, freshness, and error rates to detect governance drift.  
 
@@ -75,7 +75,7 @@ It can be enabled once model reliability and governance thresholds are met.
 - Initially disabled until sufficient validation evidence exists.  
 - Activation requires explicit approval from governance owners.  
 - Applies only to high-confidence reports (typically ≥ 70%) in pre-defined conditions such as weekend operations.  
-- Every auto-approval is written to `ui_edits_log` with `user_role='system'`, maintaining the same audit trail as human actions.  
+- Every auto-approval is written to `ui_edits_log` or 'edit_minority_event_object_log' with `user_role='system'`, maintaining the same audit trail as human actions.  
 - Auto-approvals appear in the UI with a governance badge and can be manually reversed.  
 
 See [`ui_workshop_notes.md`](../ui_workshop_notes.md) for the front-end workflow illustrating this behaviour.
@@ -90,11 +90,19 @@ See [`ui_workshop_notes.md`](../ui_workshop_notes.md) for the front-end workflow
 3. Replay sequentially (MRDL → MRCL → MRPAL → MRFL → Hydration).  
 → Produces identical final state, confirming system determinism.
 
-**Scenario B — Audit analyst edit**  
-1. Query `annotation_id` from MRFL.  
-2. Join to `ui_edits_log` for analyst, timestamp, and context.  
-3. Compare proposed vs. final causes.  
-→ Provides full human decision lineage.
+**Scenario B — Audit analyst edit**
+
+**Per-report audit**
+1. Query `annotation_id` from `minority_reports_finalised_log` (MRFL).  
+2. Join to `ui_edits_log` for analyst identity, timestamp, and edit context.  
+3. Compare proposed vs. final causes to trace the decision change.  
+→ Provides full lineage of per-report human intervention.
+
+**Per-event audit**
+1. Query `event_id` from `minority_events_log`.  
+2. Join to `edit_minority_event_object_log` for event-level modifications (e.g., metadata, evidence, or classification updates).  
+3. Compare event metadata before and after edit to validate reasoning and governance traceability.  
+→ Provides a parallel audit trail for higher-level event object changes.
 
 ---
 
