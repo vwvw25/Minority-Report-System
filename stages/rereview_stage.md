@@ -69,5 +69,24 @@ Rereview provides a **non-invasive improvement loop**:
 
 ---
 
+### Output Schema — `minority_reports_rereview_worklist (MRRW)`
+
+| Field | Type | Description |
+|--------|------|-------------|
+| `report_id` | string | Deterministic ID linking back to the affected Minority Report (`hash(store_id || first_detected_from)`). |
+| `round` | integer | Indicates the re-review iteration number (e.g., 1 = first re-review cycle). |
+| `trigger_reason` | string | Reason for triggering re-review (e.g., *model update*, *data drift*, *analyst override*, *conflict detection*). |
+| `trigger_at` | timestamp | Timestamp when the re-review trigger was generated. |
+| `finalized_at` | timestamp | Timestamp when the re-review was completed and the record re-finalized. |
+
+**Properties**
+- Tracks **post-finalisation quality assurance loops** for Minority Reports.  
+- Populated automatically when upstream schema, model, or metadata changes require a manual or automated re-evaluation.  
+- Allows controlled re-submission of reports to the HITL interface or automated pipeline.  
+- Ensures lineage and decision reproducibility by versioning the review process (via `round`).  
+- Enables full audit trail of why and when a report was revisited.
+
+---
+
 **Summary:**  
 Rereview is a downstream-only feedback mechanism that enhances attribution accuracy over time while preserving determinism, acyclicity, and auditability — a design pattern suitable for enterprise-grade production systems.
