@@ -78,8 +78,37 @@ All datasets, transforms, and lineage behave exactly as they would in production
 
 ---
 
-**Summary:**  
-Clustering links individual anomalies into meaningful patterns, producing deterministic, append-only cluster logs that enrich attribution and cohort analysis while maintaining full replayability.
+### Output Schema — `minority_reports_clustered_log (MRCL)`
+
+| Field | Type | Description |
+|--------|------|-------------|
+| `report_id` | string | Deterministic identifier for the anomaly (`hash(store_id || first_detected_from)`). |
+| `version` | integer | Monotonic counter for versioned append history. |
+| `store_id` | string | Retailer or store identifier. |
+| `sku` | string | Product identifier for the anomaly. |
+| `window_start` | timestamp | Start time of the anomaly window. |
+| `window_end` | timestamp | End time of the anomaly window (nullable if active). |
+| `severity_score` | double | Model-derived measure of anomaly intensity. |
+| `impact_estimate` | decimal | Estimated commercial uplift or loss during anomaly period. |
+| `feature_vector` | array | Numeric feature vector describing anomaly shape. |
+| `cluster_id` | string | Assigned cluster identifier (from cluster library). |
+| `cluster_name` | string | Human-readable label for the cluster pattern (e.g., *TikTok Viral*, *Data Error*). |
+| `similarity_score` | double | Distance-based similarity measure to cluster centroid. |
+| `cluster_match_confidence` | double | Confidence of the assigned cluster match. |
+| `tsne_x` | double | 2D x-coordinate for UMAP/t-SNE visualisation. |
+| `tsne_y` | double | 2D y-coordinate for UMAP/t-SNE visualisation. |
+| `report_status` | string | Lifecycle label (`clustered`, `attributed`, etc.). |
+| `written_at` | timestamp | Time of record emission (append timestamp). |
+| `run_id` | string | Execution key linking this run to demo context. |
+| `attributed_sales_total` | integer | Actual sales during anomaly window. |
+| `baseline_sales_total` | integer | Baseline (expected) sales for same period. |
+
+**Properties**
+- Append-only and deterministic — replays yield identical outputs.  
+- Clustering metadata enriches anomalies for downstream attribution.  
+- Schema aligns with MRDL to ensure consistent joins and hydration.
+
+---
 
 **Summary:**  
 Clustering links individual anomalies into meaningful patterns, producing deterministic, append-only cluster logs that enrich attribution and cohort analysis while maintaining full replayability.
