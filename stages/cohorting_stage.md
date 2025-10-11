@@ -46,6 +46,7 @@ which guarantees deterministic grouping and clean lineage for every cohort.
 3. MRCH appends snapshots (`event_status='active'` or `'ended'`).  
 4. MELOG maintains the single authoritative event registry.  
 5. Downstream hydration merges these with detection, clustering, and attribution logs.
+6. Event-level metadata may be updated post-cohorting via user_minority_events_edits_log, maintaining full audit trace.
 
 ---
 
