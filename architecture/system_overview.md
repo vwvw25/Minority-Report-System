@@ -137,6 +137,29 @@ See `architecture/governance_hooks.md` for detail.
 
 ---
 
+---
+
+## 9. Demo Reset Design  
+
+The Minority Report System uses a **Run-ID architecture** that allows clean demo resets without losing historical data.  
+
+- Every dataset includes a `run_id` column.  
+- The active `run_id` is stored in `demo_run_config`.  
+- All read-only views automatically filter to that value, isolating the current run.  
+
+**Benefits**  
+- Instant reset while preserving previous sessions.  
+- Enables before-and-after comparisons for reviewers.  
+- Guarantees reproducible lineage across multiple demos.  
+
+
+SELECT * 
+FROM proposals_union p
+JOIN demo_run_config c ON p.run_id = c.run_id
+WHERE p.status = '3_attribution_proposed';
+
+---
+
 **Summary:**  
 The Minority Report System is a self-contained, log-driven pipeline demonstrating how anomaly detection, attribution, and human review can be operationalised in an enterprise-grade, auditable architecture.  
 Every dataset, model, and decision is reproducible and traceable from raw sales data to analyst action.
