@@ -1,6 +1,6 @@
 # System Overview — Minority Report System  
 **File:** `system_overview.md`  
-**Last Updated:** 2025-09-21  
+**Last Updated:** 2025-10-11  
 
 ---
 
@@ -56,6 +56,12 @@ Identify, cluster, and attribute short-term sales anomalies in a reproducible, e
      └── minority_event_log (MELOG)
             │
             ▼
+    [User Edit Stages]
+     ui_edits_log.py
+     ├── user_edits_log (report-level)
+     └── user_minority_events_edits_log (event-level)
+            │
+            ▼
     [Finalisation Stage]
      build_minority_reports_finalised_log_from_edits.py
      └── minority_reports_finalised_log (MRFL)
@@ -83,14 +89,31 @@ Identify, cluster, and attribute short-term sales anomalies in a reproducible, e
 | `MRCL` | Log | Cluster assignments and metrics. |
 | `MRPAL` | Log | Proposed attribution causes. |
 | `MRCH` | Log | Event snapshots. |
-| `MRFL` | Log | Analyst-finalised causes. |
+| `user_edits_log` | Log | Analyst edits made to individual reports via the Workshop UI. |
+| `user_minority_events_edits_log` | Log | Analyst edits made to the **Minority Event** object, affecting all linked reports in a cohort. |
+| `MRFL` | Log | Analyst-finalised causes, combining model outputs and all edits. |
 | `minority_reports` | View | Hydrated, one-row-per-report object for UI. |
 | `minority_events_log` | View | One-row-per-event aggregation for cohort view. |
 
 Each dataset is append-only, typed, and reproducible.  
 Hydration merges them deterministically to materialise current state.
 
-### Identity and Lineage
+---
+
+## 4.1 Edit & Annotation Layer  
+
+Both report-level and event-level edits are captured in dedicated logs for full traceability and replayability.  
+
+| Log | Scope | Description |
+|------|--------|-------------|
+| `user_edits_log` | Report-level | Captures analyst changes to individual reports (e.g., confirming or correcting proposed causes). |
+| `user_minority_events_edits_log` | Event-level | Captures analyst changes to the parent event object, applying to all related reports within a cohort. |
+
+Edits from both sources are merged into the **Finalised Log (MRFL)** to create an auditable record of all human and machine interventions.
+
+---
+
+## 5. Identity and Lineage  
 
 Each anomaly and cohort has deterministic identity keys to guarantee lineage and reproducibility.
 
@@ -101,7 +124,7 @@ This ensures idempotent recomputation, consistent joins across logs, and complet
 
 ---
 
-## 5. Governance Hooks  
+## 6. Governance Hooks  
 Governance fields are consistent across all logs:  
 `report_id`, `run_id`, `written_at`, `report_status`, `is_degraded`.  
 They ensure auditability, replayability, and regulatory traceability.  
@@ -109,7 +132,7 @@ See `architecture/governance_hooks.md` for detail.
 
 ---
 
-## 6. Operational Model  
+## 7. Operational Model  
 - **Failure isolation:** Each stage reads only upstream logs. A failure never cascades.  
 - **Graceful degradation:** Missing inputs yield NULLs; UI never breaks.  
 - **Rebuildability:** Any point-in-time state can be reproduced from logs.  
@@ -117,16 +140,18 @@ See `architecture/governance_hooks.md` for detail.
 
 ---
 
-## 7. User Interaction Path  
+## 8. User Interaction Path  
 1. Analyst views hydrated minority reports in the Workshop UI.  
 2. Filters by confidence, cause, or cluster to prioritise review.  
-3. Edits or confirms causes → writes to `ui_edits_log`.  
-4. Finalisation merge produces `MRFL`.  
+3. Makes one or more edits:  
+   - **Report-level:** updates specific fields (e.g., cause, confidence) → logged to `user_edits_log`.  
+   - **Event-level:** updates shared cohort metadata (e.g., cause, category, confidence) → logged to `user_minority_events_edits_log`.  
+4. Finalisation merge (`build_minority_reports_finalised_log_from_edits.py`) consolidates both edit layers with model outputs to produce `MRFL`.  
 5. Optional rereview loop reprocesses low-confidence historical cases.  
 
 ---
 
-## 8. System Guarantees  
+## 9. System Guarantees  
 | Property | Description |
 |-----------|-------------|
 | **Determinism** | Re-running pipeline produces identical outputs. |
@@ -137,9 +162,7 @@ See `architecture/governance_hooks.md` for detail.
 
 ---
 
----
-
-## 9. Demo Reset Design  
+## 10. Demo Reset Design  
 
 The Minority Report System uses a **Run-ID architecture** that allows clean demo resets without losing historical data.  
 
@@ -152,14 +175,8 @@ The Minority Report System uses a **Run-ID architecture** that allows clean demo
 - Enables before-and-after comparisons for reviewers.  
 - Guarantees reproducible lineage across multiple demos.  
 
-
+```sql
 SELECT * 
 FROM proposals_union p
 JOIN demo_run_config c ON p.run_id = c.run_id
 WHERE p.status = '3_attribution_proposed';
-
----
-
-**Summary:**  
-The Minority Report System is a self-contained, log-driven pipeline demonstrating how anomaly detection, attribution, and human review can be operationalised in an enterprise-grade, auditable architecture.  
-Every dataset, model, and decision is reproducible and traceable from raw sales data to analyst action.
