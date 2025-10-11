@@ -56,5 +56,30 @@ Store 327 anomaly (15:30 → 17:00):
 
 ---
 
+## 7. Implementation Realism (Refined)
+
+The mocked clustering model preserves full production fidelity while remaining lightweight for the demo.
+
+**Feature Vector Generation (Real)**  
+- Extracts fixed-length anomaly windows.  
+- Normalizes series shape (scale-independent).  
+- Computes slope, volatility, symmetry, kurtosis.  
+
+**Cluster Matching (Real)**  
+- Compares generated vectors to seeded centroids in a “cluster library.”  
+- Calculates similarity via cosine or Euclidean distance.  
+- Returns closest cluster + similarity score.  
+
+**t-SNE Visualization (Mocked)**  
+- Pre-computed offline once; coordinates stored for UI display.  
+
+**Design Principle:** *Mock the intelligence, not the structure.*  
+All datasets, transforms, and lineage behave exactly as they would in production.
+
+---
+
+**Summary:**  
+Clustering links individual anomalies into meaningful patterns, producing deterministic, append-only cluster logs that enrich attribution and cohort analysis while maintaining full replayability.
+
 **Summary:**  
 Clustering links individual anomalies into meaningful patterns, producing deterministic, append-only cluster logs that enrich attribution and cohort analysis while maintaining full replayability.
