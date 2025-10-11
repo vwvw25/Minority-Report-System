@@ -26,6 +26,31 @@ All downstream clustering, attribution, and hydration depend on these logs.
 
 Each log is **append-only**, keyed by stable IDs (`report_id = hash(store_id || first_reported_at)`).
 
+### Output Schema — `minority_reports_detected_log (MRDL)`
+
+| Field | Type | Description |
+|--------|------|-------------|
+| `report_id` | string | Deterministic identifier for each anomaly (`hash(store_id || first_detected_from)`). |
+| `version` | integer | Monotonic counter for row versioning (append-only history). |
+| `store_id` | string | Retailer or location identifier. |
+| `sku` | string | Product identifier associated with the anomaly. |
+| `first_detected_from` | timestamp | Earliest tick where anomaly was detected. |
+| `window_start` | timestamp | Beginning of anomaly time window. |
+| `window_end` | timestamp | End of anomaly time window (nullable if active). |
+| `severity_score` | double | Model-derived measure of anomaly intensity. |
+| `impact_estimate` | decimal | Estimated commercial impact (e.g., uplift or loss). |
+| `report_status` | string | Lifecycle label (`detected`, `clustered`, `proposed`, etc.). |
+| `written_at` | timestamp | Time of record emission (append timestamp). |
+| `run_id` | string | Execution key linking this run to demo context. |
+| `attributed_sales_total` | integer | Total sales during anomaly window. |
+| `baseline_sales_total` | integer | Baseline (expected) sales for same window. |
+
+**Properties**
+- Append-only, no updates or deletes.  
+- Deterministic identifiers for replayability.  
+- Compatible with downstream clustering and hydration joins.  
+- Serves as the authoritative source of anomaly detection events.
+
 ---
 
 ## 4. Logic Overview  
