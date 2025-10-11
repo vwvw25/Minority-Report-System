@@ -3,7 +3,7 @@
 ---
 
 ## 1. Purpose  
-This document describes how data moves through the **Minority Report System (MRS)** — from raw inputs to hydrated analytical views.  
+This document describes how data moves through the Minority Report System (MRS) — from raw inputs to hydrated ontology objects used by the human-in-the-loop interface.
 It captures the end-to-end lineage between transforms, datasets, and user interfaces, ensuring full transparency and reproducibility.
 
 ---
