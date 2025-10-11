@@ -25,7 +25,7 @@ This document summarises the key **governance hooks** that make the system trans
 
 | Field | Description | Example Source |
 |--------|--------------|----------------|
-| `report_id` | Deterministic hash of store_id || first_detected_from. Stable key across all logs. | All stages |
+| `report_id` | Deterministic hash of store_id & first_detected_from. Stable key across all logs. | All stages |
 | `event_id` | Derived from `report_id` or cohort group. Used for aggregating reports into events. | Cohorting |
 | `run_id` | Execution key from `demo_run_config`. Ensures reproducibility per pipeline run. | All transforms |
 | `written_at` | Timestamp when row was appended. Used for freshness and version tracking. | All transforms |
