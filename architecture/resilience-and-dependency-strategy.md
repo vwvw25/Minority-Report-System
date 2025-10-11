@@ -61,7 +61,7 @@ The goal is to ensure anomaly detection, clustering, attribution, and hydration 
   If inputs fail, emit with `proposed_cause = 'unknown'`, `confidence_score = NULL`. HITL can still proceed.  
 
 - **Finalisation (human)**  
-  If edits stream is down, pipeline continues. Hydrate shows latest machine proposal.  
+  If edits stream is down, pipeline continues. Hydrate shows latest machine proposal. If either user_edits_log or user_minority_events_edits_log is temporarily unavailable, pipeline continues with available inputs and marks MRFL as degraded
 
 ---
 
