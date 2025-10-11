@@ -136,7 +136,18 @@ See `architecture/governance_hooks.md` for detail.
 - **Failure isolation:** Each stage reads only upstream logs. A failure never cascades.  
 - **Graceful degradation:** Missing inputs yield NULLs; UI never breaks.  
 - **Rebuildability:** Any point-in-time state can be reproduced from logs.  
-- **Observability:** Health metrics (freshness, coverage, error rate) computed continuously.  
+- **Observability:** Health metrics (freshness, coverage, error rate) computed continuously.
+
+### Alerting and Notification
+
+When a new minority event exceeds a defined severity threshold (typically ≥ 0.9) or matches high-impact categories (e.g., viral, competitor stockout), the system triggers an alert.  
+
+- **Source:** Alerts are generated where reports or event meet set criteria. 
+- **Recipients:** Users and managers subscribed to relevant categories.  
+- **Delivery:** Email and in-platform notification (UI entry point opens directly to the corresponding Minority Event screen).  
+- **Governance:** Every alert is logged to `ui_notifications_log` with `event_id`, `trigger_condition`, and `delivered_to`.  
+
+This ensures operational awareness of critical anomalies without requiring constant manual monitoring of dashboards.
 
 ---
 
