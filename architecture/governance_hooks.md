@@ -111,6 +111,41 @@ The design satisfies key enterprise and regulatory principles:
 
 ---
 
-## 8. Summary  
+## 8. Reopen & Audit Protocol  
+
+When new evidence emerges after closure, the MRS allows structured reopening of reports while maintaining full auditability and regulatory compliance.
+
+### Required Reopen Record
+
+    {
+      "minority_report_id": "uuid",
+      "reopened_by": "user_id",
+      "reopened_timestamp": "timestamp",
+      "reopened_reason": "enum[new_evidence, attribution_error, regulatory_request]",
+      "reopened_notes": "string (≥50 chars)"
+    }
+
+### Processing Paths
+- **Manual Update Path** — Human directly edits or overrides attribution; system appends new record to `minority_reports_proposed_attribution_log` and flags the edit.  
+- **System Reprocessing Path** — Triggers full attribution re-run using current data and model context; new proposal logged and routed to HITL for approval.  
+
+### Audit Trail Integration
+Each reopen action generates:  
+- New `hitl_annotations_log` entry (`reopened = true`)  
+- New `minority_reports_proposed_attribution_log` record  
+- Flags for traceability:  
+  - `manual_post_review_edit = true`  
+  - `attribution_override_post_review = true`  
+  - `system_reprocessing_post_closure = true`  
+
+### Governance Guarantees  
+- Every post-closure modification is fully justified and timestamped.  
+- Original state is preserved in immutable logs.  
+- All reopen actions are traceable by `annotation_id` and `report_id`.  
+- Enables compliant evolution of understanding without compromising historical accuracy.  
+
+---
+
+## 9. Summary  
 Governance in the MRS is intrinsic — achieved through **immutable logs, deterministic IDs, and explicit human annotation capture**.  
 The result is a fully replayable, audit-ready system where every anomaly, cluster, and decision is traceable end-to-end, meeting the standards expected of enterprise data governance.
