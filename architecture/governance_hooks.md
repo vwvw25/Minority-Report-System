@@ -16,7 +16,7 @@ This document summarises the key **governance hooks** that make the system trans
 - **Append-only history:** no row is ever updated or deleted — all changes are additive.  
 - **Deterministic lineage:** identical inputs always produce identical outputs.  
 - **Reproducibility:** the entire system can be replayed from raw logs to reproduce any past state.  
-- **Human accountability:** every analyst edit and model proposal is logged separately, never overwriting prior entries.  
+- **Human accountability:** every user edit and model proposal is logged separately, never overwriting prior entries.  
 - **Traceability:** every record links upstream and downstream via stable identifiers.  
 
 ---
