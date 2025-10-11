@@ -25,6 +25,10 @@ Implemented in `cohort_reports.py`, it deterministically identifies continuous a
 
 Both logs are **append-only** and keyed by deterministic IDs (`report_id = hash(store_id || first_detected_from)`).
 
+Additionally, each cohort is assigned a stable group identifier:  
+`report_group_id = hash(store_id || earliest_first_detected_at_in_cohort)`  
+which guarantees deterministic grouping and clean lineage for every cohort.
+
 ---
 
 ## 4. Core Logic  
