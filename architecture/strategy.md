@@ -107,3 +107,33 @@ Strategic mocking preserves architecture integrity — models remain in place an
 - `minority_reports_cohort_log` — per-report cohort assignment (report_group_id, size, confidence).  
 - `minority_reports` (hydrated view) — wide, latest-per-log merge for UI.  
 - `minority_events_log` — one row per event with report_ids, aligned `store_id_1…14` and `retailer_1…14` pairs, min/max window, sums/averages, latest cause, confidence, status.
+
+---
+
+## Validation Scenarios (MVP)
+
+**Scenario MRS-001: Competitor Supply Disruption**
+
+*Business Context*: Major competitor experiences supply chain failure, creating sudden market opportunity.  
+*Success Criteria*:  
+- Automated systems identify the event as temporary rather than structural.  
+- MMM/MAB maintain long-term strategy while allowing tactical short-term budget shifts.  
+- Attribution clearly communicates temporariness; system auto-resets post-event.  
+
+**Scenario MRS-002: Viral Content Spike**
+
+*Business Context*: Social media virality causes a transient surge in demand.  
+*Success Criteria*:  
+- Demand spike tagged as viral-driven, not organic trend.  
+- Long-term models remain unaffected by temporary noise.  
+- Marketing and supply-chain stakeholders can react tactically while preserving strategic stability.  
+
+**Scenario MRS-003: Localised Weather Event**
+
+*Business Context*: Severe weather produces temporary regional distortion.  
+*Success Criteria*:  
+- Geographically constrained anomalies recognised and isolated.  
+- National models optimise on true baseline trends.  
+- Regional spikes are ring-fenced with automatic reset after event closure.
+
+---
