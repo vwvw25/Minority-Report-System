@@ -61,6 +61,42 @@ One row per minority report per tick.
 
 ---
 
+### Output Schema — `minority_reports_proposed_attribution_log (MRPAL)`
+
+| Field | Type | Description |
+|--------|------|-------------|
+| `report_id` | string | Deterministic anomaly identifier (`hash(store_id || first_detected_from)`). |
+| `version` | integer | Monotonic counter for row versioning (append-only history). |
+| `store_id` | string | Retailer or store identifier. |
+| `sku` | string | Product identifier linked to anomaly. |
+| `window_start` | timestamp | Start time of anomaly window. |
+| `window_end` | timestamp | End time of anomaly window (nullable if active). |
+| `severity_score` | double | Intensity of the anomaly derived from detection stage. |
+| `impact_estimate` | decimal | Estimated commercial impact (uplift or loss). |
+| `proposed_cause` | string | Primary proposed cause of the anomaly. |
+| `proposed_cause_category` | string | Category classification of the primary cause (e.g., *Marketing*, *Operational*, *Data Error*). |
+| `confidence_score` | double | Model-derived confidence in the primary cause. |
+| `proposed_cause_2` | string | Secondary proposed cause (alternative hypothesis). |
+| `proposed_cause_category_2` | string | Category of the secondary cause. |
+| `confidence_score_2` | double | Confidence in secondary cause. |
+| `proposed_cause_3` | string | Tertiary proposed cause (fallback hypothesis). |
+| `proposed_cause_category_3` | string | Category of the tertiary cause. |
+| `confidence_score_3` | double | Confidence in tertiary cause. |
+| `supporting_evidence` | string | Optional notes or reference to supporting data (e.g., campaign ID, social trigger). |
+| `report_status` | string | Lifecycle label (`proposed`, `finalised`, etc.). |
+| `written_at` | timestamp | Time the record was appended. |
+| `run_id` | string | Execution key linking this record to demo context. |
+| `attributed_sales_total` | integer | Actual sales observed during the anomaly window. |
+| `baseline_sales_total` | integer | Baseline expected sales for comparison. |
+
+**Properties**
+- Append-only log capturing machine-proposed attributions.  
+- Deterministic schema matching MRDL and MRCL for reliable joins.  
+- Serves as authoritative record for all model-based attribution proposals.  
+- Enables side-by-side comparison of confidence tiers and model evolution.
+
+---
+
 **Summary:**  
 Attribution enriches minority reports with plausible causes and confidence scores, ensuring downstream systems remain interpretable even under partial data.  
 The transform is deterministic, replayable, and resilient—demonstrating end-to-end system design maturity without relying on live ML training.
