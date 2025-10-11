@@ -90,41 +90,44 @@ The goal is to ensure anomaly detection, clustering, attribution, and hydration 
 
 ## 7. Finalisation & Recovery
 
-### Finalise Log Resilience
+### Data Consolidation Resilience  
 
-The **finalise log** consolidates all sources into the authoritative “current state” row per report.  
-Resilience here is critical since this version is exposed to the UI and analysts.  
+Both the **Finalisation** and **Hydration** stages consolidate multiple sources into a unified, authoritative record.  
+While **Finalisation** produces a static audit log for rereview, and **Hydration** produces the live dataset surfaced to analysts, both rely on the same resilience framework.  
 
-**Key patterns:**  
+**1. Explicit Precedence Chains**  
+Field groups are merged deterministically using `coalesce` in a fixed order  
+(e.g. detection → clustering → attribution → cohort → finalisation → UI edits).  
+If no source provides a value, it remains `NULL` — never guessed or silently imputed.  
 
-- **Explicit precedence chains**  
-  Each field group is filled with `coalesce` in a fixed order (e.g., proposed cause: cohort → attribution → UI). If no source provides the field, it remains NULL.  
+**2. Source Provenance**  
+For every field group, a `source_used_*` column records which log provided the value  
+(`detected`, `clustered`, `attribution`, `cohort`, `finalised`, or `ui`).  
+This ensures end-to-end auditability of every field.  
 
-- **Source provenance**  
-  For every field group, a `source_used_*` column records which log actually provided the value (`cohort`, `attribution`, `clustered`, `detected`, `ui`, or `none`).  
+**3. Degraded Flags**  
+If a preferred upstream source is missing (e.g. no attribution log or cohort record), the consolidated row is tagged:  
 
-- **Degraded flag**  
-  If a preferred source was missing (e.g., no cohort row, attribution log down), the row is marked:  
-  - `is_degraded = true`  
-  - `report_status = finalised_<reason>` (e.g., `finalised_MRCL_down_MEEL_down`).  
+`is_degraded = true`  
+`report_status = <stage>_degraded_<reason>`  
 
-- **Reasons**  
-  Reasons are concatenated short labels per missing primary, e.g.:  
-  - `MRCL_down` → cohort missing  
-  - `MRPAL_down` → attribution missing  
-  - `MEEL_down` → ended log missing  
+Short encoded reasons indicate missing inputs:  
+- `MRCL_down` → clustering or cohort missing  
+- `MRPAL_down` → attribution missing  
+- `MEEL_down` → ended log missing  
 
-- **Observability**  
-  These provenance fields (`source_used_*`, `degraded_reasons`) may be kept internal but allow ops to quickly diagnose whether degradation was due to cohorts, attribution, clustering, etc.  
+**4. Observability**  
+Provenance and degradation fields (`source_used_*`, `degraded_reasons`) enable fast diagnosis of reduced confidence — whether caused by clustering, attribution, cohorting, or ingestion gaps.  
 
-This guarantees that **finalised rows always exist** while clearly signalling when confidence is reduced.
+**5. Recovery Procedures**  
+- **External feed down** → pipeline continues; attribution degrades; rerun attribution after recovery.  
+- **Cluster model error** → route to mock/bypass clustering; hydrated data still available.  
+- **Schema drift** → missing columns filled as typed NULLs; pipeline remains non-failing.  
+- **Edits log unavailable** → derive `report_id` from existing identifiers; emit minimal valid record.  
 
-### Recovery Procedures
-
-- **External feed down** → pipeline continues, attribution degrades; backfill and rerun attribution when feed recovers.  
-- **Cluster model error** → route to mock/bypass clustering; hydrate still shows detection rows.  
-- **Hydrate schema check fails** → upstream adds missing columns as typed NULL; hydrate tolerates.  
-- **Edits log schema drift** → compute `report_id` from available fields; emit empty but non-failing output.  
+**Guarantee**  
+Both stages always emit a valid record, even when upstream data is incomplete.  
+This ensures uninterrupted operation and transparent confidence signalling across the entire Minority Report System.  
 
 ---
 
