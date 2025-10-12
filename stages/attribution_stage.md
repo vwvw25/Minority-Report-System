@@ -4,8 +4,9 @@
 ---
 
 ## 1. Purpose  
-The attribution stage proposes **causes** for each minority report via the transform `propose_cause_for_minority.py`.  
-It joins contextual and campaign data to infer the most plausible explanation for each anomaly and writes authoritative outputs to the **Minority Reports Proposed Attribution Log (MRPAL)**.
+The attribution stage proposes **causes** for each minority report via the transform `propose_cause_for_minority.py`,  
+which applies the **attribution model** (mocked in the MVP) to contextual and campaign data to infer the most plausible explanation for each anomaly.  
+It writes authoritative outputs to the **Minority Reports Proposed Attribution Log (MRPAL)**.
 
 ---
 
@@ -19,19 +20,63 @@ It joins contextual and campaign data to infer the most plausible explanation fo
 ---
 
 ## 3. Model Logic  
-1. **Primary cause:** overlap of campaign or contextual event with anomaly window.  
+1. **Primary cause:** inferred by the attribution model through probabilistic evaluation of campaign overlaps, contextual signals, and cluster proximity, weighted by historical priors.
 2. **Secondary/tertiary:** other overlapping signals, stored in `_2`, `_3` fields.  
-3. **Fallback:** if no match, emit `proposed_cause=NULL`, `confidence=NULL`.  
-4. **Carry-through:** baseline and attributed sales totals from MRDL.  
+3. **Fallback:** if no viable candidate cause is identified, assign `proposed_cause='unknown'` with a nominal `confidence_score=0.05` rather than emitting NULLs.
 
 **Example**  
 Store 327 anomaly during “2-for-1 Chocolate Promo” + bank holiday →  
-- Primary: *Campaign*, confidence 0.87  
-- Secondary: *Bank Holiday Uplift*, confidence 0.55  
+- Primary: proposed_cause_category: TPO, proposed_cause: 2-for-1 Chocolate Promo, confidence_score 0.87  
+- Secondary: proposed_cause_category: Social Media Viral, proposed_cause: TikTok, confidence 0.55  
+
+### Model Behaviour (Production)
+
+In the mock model, the attribution model is mocked via deterministic lookups to `master_narratives`.  
+In production, this stage would invoke a **model inference transform** — a component that applies a pre-trained attribution model to new anomaly data.  
+The model would evaluate temporal, geographic, and contextual correlations between sales anomalies and candidate causes, returning a ranked list of plausible attributions with confidence scores.
+
+Model training would occur separately, outside the operational pipeline, using historical anomalies and campaign data.  
+This separation ensures the pipeline remains stateless and deterministic while still benefiting from periodically retrained models.
+
+### Inputs (Feature Families)
+- Temporal alignment between campaign or event and anomaly window.  
+- Lead/lag correlations between campaign activity and sales patterns.  
+- Geographic overlap between campaign coverage and affected stores.  
+- Cluster similarity to historically known patterns.  
+- External signals such as weather, competitor price/stock changes, and social mentions.  
+- Structural priors from campaign metadata (spend, format, channel, historical uplift).
+
+### Outputs
+The model emits a ranked list of candidate causes with associated probabilities or confidence scores.  
+Example:
+
+{
+  "report_id": "MR-982d45",
+  "proposed_cause": "2-for-1 Chocolate Promo",
+  "proposed_cause_category": "Marketing",
+  "confidence_score": 0.87,
+  "proposed_cause_2": "Hot Weather",
+  "confidence_score_2": 0.42,
+  "proposed_cause_3": "Competitor Stockout",
+  "confidence_score_3": 0.33
+}
 
 ---
 
-## 4. Output: `minority_reports_proposed_attribution_log` (MRPAL)
+## 4. Transform Logic  
+Most fields in the output are *carried through* from upstream logs to maintain schema continuity and enable deterministic joins.  
+Only the cause and confidence columns are model-generated.
+
+**Steps**
+1. Join MRDL (detection), MRCL (clustering), and contextual datasets.  
+2. Pass relevant features to the attribution model.  
+3. Carry through upstream fields (`report_id`, `window_start`, `baseline_sales_total`, etc.) unchanged.  
+4. Append model outputs (`proposed_cause`, `confidence_score`, etc.).  
+5. Write to `minority_reports_proposed_attribution_log` (MRPAL) with `report_status='proposed'`.  
+
+---
+
+## 5. Output: `minority_reports_proposed_attribution_log` (MRPAL)
 One row per minority report per tick.
 
 | Field | Description |
@@ -46,15 +91,15 @@ One row per minority report per tick.
 
 ---
 
-## 5. Governance & Validation  
+## 6. Governance & Validation  
 - **Field precedence:** Analyst edits > Attribution > Cluster metadata.  
-- **Confidence tiers:** High > 70% (auto-confirm), Medium 30–70% (review), Low < 30% (open loop).  
+- **Confidence tiers:** Process of working with client to establish threshold tiers for alerts + autoconfirm (when/where it becomes viable). 
 - **Synthetic tests:** inject known causes (e.g., TikTok spike) to verify attribution.  
 - **Audit:** All rows append-only with deterministic IDs and timestamps for replayability.  
 
 ---
 
-## 6. Resilience & Monitoring  
+## 7. Resilience & Monitoring  
 - Writes only to MRPAL (append-only, idempotent).  
 - If inputs fail → emit `proposed_cause_category='unknown'`, `confidence=NULL`.  
 - **SLIs:** freshness < 4 h (p95); ≥80% coverage within SLA; <1% rows to `_errors`.  
