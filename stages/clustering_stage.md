@@ -5,7 +5,7 @@
 
 ## 1. Purpose  
 The clustering stage groups similar anomalies so analysts can see emerging patterns (e.g., viral spikes vs. data errors).  
-Implemented in `feature_vector_cluster_match.py`, it:  
+Implemented in `cluster_minority_report.py`, it:  
 1. Builds feature vectors from recent sales slices.  
 2. Applies a clustering model (real or mocked).  
 3. Writes results to the **Minority Reports Clustered Log (MRCL)** for downstream attribution.
@@ -30,7 +30,7 @@ Key fields:
 ---
 
 ## 4. Core Logic  
-- **Slice Construction:** extract actual sales `[window_start → written_at]` per anomaly.  
+- **Slice Construction:** extract actual sales from window_start up to the latest detection timestamp (written_at) for each anomaly.
 - **Feature Vector:** describe anomaly shape (uplift, slope, volatility, timing).  
   - In demo builds, vector may be mocked (NULL).  
 - **Clustering Model:** assign deterministic `cluster_id` and `cluster_name`, compute similarity/confidence metrics.  
@@ -58,23 +58,22 @@ Store 327 anomaly (15:30 → 17:00):
 
 ## 7. Implementation Realism (Refined)
 
-The mocked clustering model preserves full production fidelity while remaining lightweight for the demo.
+In the MVP, the clustering stage is **structurally complete but functionally mocked**.  
+The transform `cluster_minority_report.py` preserves the full data flow and schema expected in production but does not perform real vectorisation or similarity scoring.
 
-**Feature Vector Generation (Real)**  
-- Extracts fixed-length anomaly windows.  
-- Normalizes series shape (scale-independent).  
-- Computes slope, volatility, symmetry, kurtosis.  
+**Mock Behaviour**
+- The transform retrieves predefined cluster assignments and metadata directly from `master_narratives`.  
+- All analytical fields (`feature_vector`, `similarity_score`, `cluster_match_confidence`, `tsne_x`, `tsne_y`) are populated deterministically or with placeholder values.  
+- This ensures downstream transforms (attribution, hydration, finalisation) function exactly as they would in a production pipeline.
 
-**Cluster Matching (Real)**  
-- Compares generated vectors to seeded centroids in a “cluster library.”  
-- Calculates similarity via cosine or Euclidean distance.  
-- Returns closest cluster + similarity score.  
-
-**t-SNE Visualization (Mocked)**  
-- Pre-computed offline once; coordinates stored for UI display.  
+**Intended Production Behaviour**
+- Compute feature vectors from anomaly time series (capturing shape, volatility, asymmetry, and temporal signatures).  
+- Compare vectors against trained centroids in a “cluster library” using cosine or Euclidean distance.  
+- Return best-fit cluster and confidence score per anomaly.  
+- Generate **UMAP coordinates** for visualization and proximity analysis, replacing t-SNE for scalability and determinism.
 
 **Design Principle:** *Mock the intelligence, not the structure.*  
-All datasets, transforms, and lineage behave exactly as they would in production.
+Even though the model logic is static in the MVP, the transform and dataset behave exactly as they would in production, maintaining full determinism, lineage, and interface compatibility.
 
 ---
 
