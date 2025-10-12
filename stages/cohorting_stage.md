@@ -4,8 +4,9 @@
 ---
 
 ## 1. Purpose  
-The cohorting stage groups short-term anomalies (**minority reports**) into cohesive **events** for each store.  
-Implemented in `cohort_reports.py`, it deterministically identifies continuous anomaly windows, updates metrics over time, and writes outputs to the **Minority Reports Cohorted Log (MRCH)** and **Minority Event Log (MELOG)**.
+The cohorting stage groups related anomalies (**Minority Reports**) into higher-order **Minority Events** — sets of anomalies that are likely driven by the same underlying cause.  
+Implemented in `build_minority_report_cohorts.py`, it analyses temporal overlap, store proximity, and cluster similarity to infer shared causality.  
+The transform deterministically assigns each anomaly to an event group (`report_group_id`), updates aggregate metrics over time, and writes outputs to the **Minority Reports Cohorted Log (MRCH)** and **Minority Event Log (MELOG)**.
 
 ---
 
@@ -23,40 +24,54 @@ Implemented in `cohort_reports.py`, it deterministically identifies continuous a
 | `minority_reports_cohorted_log` (MRCH) | Per-tick snapshots of evolving events. |
 | `minority_event_log` (MELOG) | One stable row per event (registry of active and ended events). |
 
-Both logs are **append-only** and keyed by deterministic IDs (`report_id = hash(store_id || first_detected_from)`).
-
-Additionally, each cohort is assigned a stable group identifier:  
-`report_group_id = hash(store_id || earliest_first_detected_at_in_cohort)`  
-which guarantees deterministic grouping and clean lineage for every cohort.
+Both logs are **append-only** and keyed by deterministic identifiers.  
+Each anomaly retains its `report_id = hash(store_id || first_detected_from)`.  
+Cohorts are assigned a `report_group_id`, computed as a hash of the `report_id` and the `first_detected_from` of the earliest anomaly within that cohort.  
+This guarantees reproducible groupings and stable lineage across replays.
 
 ---
 
 ## 4. Core Logic  
-1. **Event grouping:** for each `store_id`, combine temporally adjacent reports within a gap threshold (e.g., 30 min).  
-2. **Event identity:** `first_detected_from` anchors the group; `report_id` derived deterministically.  
-3. **Metric updates:** refresh severity, impact, and sales totals each tick.  
-4. **Closure:** if no new reports within threshold → mark event ended; write final MRCH and MELOG rows.  
-5. **Stateless replay:** each run recomputes events from logs; no in-memory state required.
+1. **Causal grouping:** group anomalies (`minority_reports`) that appear to share a common underlying cause,  
+   using temporal overlap and similarity in their **cluster** and **attribution** outputs.  
+   The transform does not infer new causality — it consolidates existing model signals to identify shared events.  
+2. **Event identity:** assign a deterministic  
+   `report_group_id = hash(report_id || earliest_first_detected_at_in_group)`.  
+   Each anomaly retains its own `report_id` but inherits the same group ID as others in the inferred event.  
+3. **Metric aggregation:** compute event-level metrics (e.g., cumulative severity, uplift, duration, report count).  
+4. **Closure:** when all reports within a group have ended, mark the event as `ended` and append final MRCH and MELOG rows.  
+5. **Stateless replay:** each run recomputes cohort membership deterministically from the input logs;  
+   no intermediate state or persistence is required.
 
 ---
 
 ## 5. Operational Flow  
-1. MRDL provides anomaly rows.  
-2. Cohorting groups them by store/time gap.  
-3. MRCH appends snapshots (`event_status='active'` or `'ended'`).  
-4. MELOG maintains the single authoritative event registry.  
-5. Downstream hydration merges these with detection, clustering, and attribution logs.
-6. Event-level metadata may be updated post-cohorting via user_minority_events_edits_log, maintaining full audit trace.
+1. **Inputs:**  
+   - `minority_reports_clustered_log` (MRCL)  
+   - `minority_reports_proposed_attribution_log` (MRPAL)  
+   - `minority_reports_detected_log` (MRDL)  
+   - `demo_run_config`  
+
+2. **Group:** combine anomalies that share time overlap and similar cluster or attribution results.  
+3. **Assign:** generate deterministic `report_group_id`s based on earliest detection within each cohort.  
+4. **Write:** append cohort snapshots to `minority_reports_cohorted_log` (MRCH).  
+5. **Register:** create or update one authoritative row per event in `minority_event_log` (MELOG).  
+6. **Post-cohort edits:** analysts may later update event-level data via `user_minority_events_edits_log`,  
+   maintaining a complete audit trail.
 
 ---
 
 ## 6. Example Narrative  
-Store 327 emits anomalies at 11:55, 12:00, 12:05 → grouped as one event:  
-- `report_id = hash('327' || 11:55)`  
-- `window_start=11:55`, `window_end=12:05`, `severity=0.72`, `attributed_sales_total=8,200`.  
-- MRCH rows written per tick; MELOG created once at 11:55.  
-- At 13:05, event ends → final MRCH + MELOG rows with `event_status='ended'`.
+Store 327 shows an anomaly from 11:55–12:05 linked to cluster *TikTok Viral* and proposed cause *Influencer Mention*.  
+Store 412 shows a similar spike from 11:57–12:06 with the same cluster and cause.  
+Cohorting identifies overlap in timing and attribution and groups both reports into a single Minority Event:
 
+- `report_group_id = hash('ME-e87a413ed08d' || 11:55)`  
+- `window_start=11:55`, `window_end=12:06`, `severity=0.72`, `attributed_sales_total=8,200`.  
+- MRCH records snapshots for each tick; MELOG creates one event record at 11:55.  
+- When both anomalies close, the event is marked `ended` and final MRCH + MELOG rows are appended.  
+- Subsequent analyst updates (e.g., tagging as “confirmed viral effect”) are logged in `user_minority_events_edits_log`.
+- 
 ---
 
 ## 7. Schema Summary  
