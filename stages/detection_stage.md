@@ -5,13 +5,13 @@
 
 ## 1. Purpose  
 The detection stage is the **entry point** of the Minority Report System.  
-It combines a **Baseline Sales Model** and an **Anomaly Classifier**, orchestrated by the transform `detect_anomalies.py`, to identify and formalise sales anomalies as **minority reports**.  
+It combines a **Baseline Sales Model** and an **Anomaly Classifier Model**, orchestrated by the transform `detect_anomalies.py`, to identify and formalise sales anomalies as **minority reports**.  
 All downstream clustering, attribution, and hydration depend on these logs.
 
 ---
 
 ## 2. Inputs  
-- **`sales_timeseries_data`** — observed sales by store × SKU × time.  
+- **`sales_timeseries_data`** — observed sales by store × time.  
 - **`demo_run_config`** — provides `run_id`.  
 
 The detection stage assumes pre-integrated, clean sales data is available as `unified_sales_data`.  
