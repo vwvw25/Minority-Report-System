@@ -5,11 +5,14 @@
 ---
 
 ## 1. Purpose  
-The hydration stage materialises the **current state** of every minority report by merging data from all authoritative logs.  
-It consolidates detection, clustering, attribution, cohorting, finalisation, and rereview outputs into a **single, wide, analyst-ready object**.
+The hydration stage materialises the **latest state** of each Minority Report by combining data from all authoritative logs.  
+Implemented in the transform `hydrate_minority_reports.py`, it coalesces the most recent information for every report —  
+across detection, clustering, attribution, cohorting, and finalisation — into a single, denormalised dataset.  
 
-Implemented in the transform `hydrate_minority_reports.py`, hydration is the only stage that reads across logs.  
-It never mutates upstream datasets — it simply coalesces them to produce deterministic, queryable views.
+This hydrated dataset underpins the **Minority Report ontology object**, providing a continuously up-to-date,  
+queryable representation of each report’s state at any point in time.  
+The transform never mutates upstream data; it reads append-only logs and deterministically assembles  
+the current operational and analytical view of every report and event.
 
 ---
 
@@ -69,14 +72,14 @@ Hydration is designed to be **idempotent and stateless** — a full rebuild prod
 2. Align schemas and append typed nulls for any missing columns.  
 3. Join by deterministic IDs (`report_id`, `run_id`).  
 4. Coalesce fields by precedence and latest timestamp.  
-5. Output hydrated datasets (`minority_reports`, `minority_events_log`).  
+5. Output hydrated dataset (`minority_reports`).  
 
 ---
 
 ## 7. Example Narrative  
 Report `abc123` appears in multiple logs:  
-- Detected at 15:30, clustered as *“Social Spike”*, attributed as *“TikTok Challenge”*.  
-- Analyst later finalises as *“Competitor Stockout”*.  
+- Detected at 15:30, clustered as *“Social Media Viral”*, attributed as *“TikTok Challenge”*, both with low confidence.  
+- User, who has spoken to retail chain, later finalises as *“Competitor Stockout”*.  
 Hydration coalesces these into a single row:  
 `final_cause="Competitor Stockout"`, `confidence_score=0.78`, `cluster_name="Social Spike"`, `report_status="finalised"`.  
 
