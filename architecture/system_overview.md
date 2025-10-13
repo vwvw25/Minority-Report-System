@@ -40,7 +40,7 @@ Identify, cluster, and attribute short-term sales anomalies in a reproducible, e
 
 ---
 
-## 4. High-Level Flow  
+## 4. High-Level Flow
 
 unified_sales_data  →  sales_timeseries_data
             │
