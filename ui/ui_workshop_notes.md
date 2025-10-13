@@ -121,6 +121,22 @@ This behaviour is also documented under *governance_hooks.md → Automated Decis
 - **Human-in-the-loop by default** — automation can increase only once system accuracy is proven.  
 - **Aesthetic parity** — UI matches Palantir design language: map-centric, data-dense, calm dark theme.  
 
+### A Note on the T-SNE Clustering Widget  
+
+The **Minority Report** and **Minority Event** pages include a Slate widget that visualises the t-SNE (cluster similarity) layout.  
+
+This component is included **deliberately for client confidence and engagement**, not analytical necessity.  
+Its primary purpose is to give the attribution process a *visual tangibility* — a way to *see* similarity and proximity between related events.  
+
+This has two roles:  
+1. **Confidence and interpretability:** it provides visible “evidence” of how attribution aligns with comparable patterns.  
+2. **Presentation and persuasion:** it’s designed to *wow* clients, stakeholders, and board members by making an otherwise abstract process visually intuitive.  
+
+Visual representation plays an important role in marketing attribution, where demonstrating *why* results occurred is often as valuable as the results themselves.  
+In that sense, this widget doesn’t just show that *“this £120k uplift was not due to paid marketing”* — it also helps communicate that *“this £120k uplift was driven by our viral TikTok campaign.”*  
+
+Through one elegant visual, a subsystem that might otherwise be invisible gains visibility, trust, and emotional resonance — bridging the rational case for attribution with the persuasive power of storytelling.
+
 ---
 
 ## 7. Example Interaction Transcript  
