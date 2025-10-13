@@ -42,6 +42,7 @@ Identify, cluster, and attribute short-term sales anomalies in a reproducible, e
 
 ## 4. High-Level Flow
 
+```
 unified_sales_data  →  sales_timeseries_data
             │
             ▼
@@ -88,6 +89,7 @@ unified_sales_data  →  sales_timeseries_data
  ├── build_rereview_worklist.py
  ├── rereview_cluster_reports.py
  └── rereview_propose_cause.py
+ ```
  
 ---
 
