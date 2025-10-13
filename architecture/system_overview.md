@@ -1,6 +1,6 @@
 # System Overview — Minority Report System  
 **File:** `system_overview.md`  
-**Last Updated:** 2025-10-11  
+**Last Updated:** 2025-10-13  
 
 ---
 
@@ -8,13 +8,25 @@
 This document provides a high-level overview of the **Minority Report System (MRS)** architecture — how data flows through the pipeline, how each stage interacts, and how the system achieves deterministic, replayable anomaly detection and attribution.
 
 The overview connects concepts defined in:
-- `architecture/Strategy.md`
+- `architecture/strategy.md`
 - `stages/*_stage.md`
 - `architecture/governance_hooks.md`
 
 ---
 
-## 2. Architectural Summary  
+## 2. Overview  
+
+The MRS is part of a broader analytics platform combining an MMM and a MAB to answer the question:  
+> “Which combination of TPO and marketing campaigns will produce the highest ROI on spend in June?”
+
+While the MMM sets total budgets for TPO and marketing campaigns at a **monthly** level, the MAB allocates those budgets **daily** across auction-based platforms (e.g. Facebook, TikTok, Programmatic).  
+
+Accurate attribution of sales to campaigns is critical to ensuring the MAB allocates budget efficiently.  
+The MRS specifically identifies **sales anomalies** and establishes their causes to prevent them being misattributed to paid campaigns — misattribution that could otherwise cause the MAB to increase spend on the wrong activities.
+
+---
+
+## 3. Architectural Summary  
 
 **System goal:**  
 Identify, cluster, and attribute short-term sales anomalies in a reproducible, enterprise-safe way.
@@ -28,103 +40,91 @@ Identify, cluster, and attribute short-term sales anomalies in a reproducible, e
 
 ---
 
-## 3. High-Level Flow  
+## 4. High-Level Flow  
 
-    sales_timeseries_data
+unified_sales_data  →  sales_timeseries_data
             │
             ▼
-    [Detection Stage]
-     detect_anomalies.py
-     ├── baseline_sales_model_prediction_log
-     ├── anomaly_classifier_model_prediction_log
-     └── minority_reports_detected_log (MRDL)
+[Detection Stage]
+ detect_anomalies.py
+ ├── baseline_sales_model_prediction_log
+ ├── anomaly_classifier_model_prediction_log
+ └── minority_reports_detected_log (MRDL)
             │
             ▼
-    [Clustering Stage]
-     feature_vector_cluster_match.py
-     └── minority_reports_clustered_log (MRCL)
+[Clustering Stage]
+ cluster_minority_report.py
+ └── minority_reports_clustered_log (MRCL)
             │
             ▼
-    [Attribution Stage]
-     propose_cause_for_minority.py
-     └── minority_reports_proposed_attribution_log (MRPAL)
+[Attribution Stage]
+ propose_cause_for_minority.py
+ └── minority_reports_proposed_attribution_log (MRPAL)
             │
             ▼
-    [Cohorting Stage]
-     cohort_reports.py
-     ├── minority_reports_cohorted_log (MRCH)
-     └── minority_event_log (MELOG)
+[Cohorting Stage]
+ build_minority_report_cohorts.py
+ ├── minority_reports_cohorted_log (MRCH)
+ └── minority_event_log (MELOG)
             │
             ▼
-    [User Edit Stages]
-     ui_edits_log.py
-     ├── user_edits_log (report-level)
-     └── user_minority_events_edits_log (event-level)
+[User Edit Stages]
+ (Workshop UI)
+ ├── user_edits_log (report-level)
+ └── user_minority_events_edits_log (event-level)
             │
             ▼
-    [Finalisation Stage]
-     build_minority_reports_finalised_log_from_edits.py
-     └── minority_reports_finalised_log (MRFL)
+[Finalisation Stage]
+ build_minority_reports_finalised_log_from_edits.py
+ └── minority_reports_finalised_log (MRFL)
             │
             ▼
-    [Hydration Stage]
-     hydrate_minority_reports.py
-     ├── minority_reports (hydrated)
-     └── minority_events_log (wide event view)
+[Hydration Stage]
+ hydrate_minority_reports.py
+ ├── minority_reports (hydrated dataset)
+ └── minority_events_log (hydrated dataset)
             │
             ▼
-    [Rereview Stage]
-     (optional downstream loop)
-     ├── build_rereview_worklist.py
-     ├── rereview_cluster_reports.py
-     └── rereview_propose_cause.py
+[Rereview Stage] (optional downstream loop)
+ ├── build_rereview_worklist.py
+ ├── rereview_cluster_reports.py
+ └── rereview_propose_cause.py
+\`\`\`
 
 ---
 
-## 4. Data Contracts  
+## 5. Data Contracts  
 
 | Dataset | Type | Description |
-|----------|------|-------------|
+|---------|------|-------------|
 | `MRDL` | Log | Authoritative detection log. |
-| `MRCL` | Log | Cluster assignments and metrics. |
-| `MRPAL` | Log | Proposed attribution causes. |
-| `MRCH` | Log | Event snapshots. |
-| `user_edits_log` | Log | Analyst edits made to individual reports via the Workshop UI. |
-| `user_minority_events_edits_log` | Log | Analyst edits made to the **Minority Event** object, affecting all linked reports in a cohort. |
-| `MRFL` | Log | Analyst-finalised causes, combining model outputs and all edits. |
-| `minority_reports` | View | Hydrated, one-row-per-report object for UI. |
-| `minority_events_log` | View | One-row-per-event aggregation for cohort view. |
+| `MRCL` | Log | Cluster assignments and similarity metrics. |
+| `MRPAL` | Log | Proposed attribution causes and confidence. |
+| `MRCH` | Log | Per-tick snapshots of cohort (event) evolution. |
+| `MELOG` | Log | One stable row per event (event registry). |
+| `user_edits_log` | Log | Analyst edits to individual reports via the UI. |
+| `user_minority_events_edits_log` | Log | Analyst edits to the **Minority Event** object (cohort-level). |
+| `MRFL` | Log | Finalised report rows (merge of model outputs + edits; used for rereview). |
+| `minority_reports` | Dataset | Hydrated, one-row-per-report object used by the UI. |
+| `minority_events_log` | Dataset | Hydrated, one-row-per-event object used by the UI. |
 
 Each dataset is append-only, typed, and reproducible.  
-Hydration merges them deterministically to materialise current state.
+Hydration deterministically assembles the **current state** for UI consumption without mutating upstream logs.
 
 ---
 
-## 4.1 Edit & Annotation Layer  
+## 6. Identity and Lineage  
 
-Both report-level and event-level edits are captured in dedicated logs for full traceability and replayability.  
-
-| Log | Scope | Description |
-|------|--------|-------------|
-| `user_edits_log` | Report-level | Captures analyst changes to individual reports (e.g., confirming or correcting proposed causes). |
-| `user_minority_events_edits_log` | Event-level | Captures analyst changes to the parent event object, applying to all related reports within a cohort. |
-
-Edits from both sources are merged into the **Finalised Log (MRFL)** to create an auditable record of all human and machine interventions.
-
----
-
-## 5. Identity and Lineage  
-
-Each anomaly and cohort has deterministic identity keys to guarantee lineage and reproducibility.
+Deterministic identity keys guarantee lineage and reproducibility:
 
 - `report_id = hash(store_id || first_detected_at)` uniquely identifies each anomaly.  
-- `report_group_id = hash(store_id || earliest_first_detected_at_in_cohort)` groups related anomalies into persistent cohorts.
+- `report_group_id = hash(report_id || earliest_first_detected_at_in_cohort)` groups anomalies into persistent cohorts (Minority Events).
 
-This ensures idempotent recomputation, consistent joins across logs, and complete auditability across all pipeline stages.
+This ensures idempotent recomputation, consistent joins, and complete auditability across all pipeline stages.
 
 ---
 
-## 6. Governance Hooks  
+## 7. Governance Hooks  
 Governance fields are consistent across all logs:  
 `report_id`, `run_id`, `written_at`, `report_status`, `is_degraded`.  
 They ensure auditability, replayability, and regulatory traceability.  
@@ -132,62 +132,57 @@ See `architecture/governance_hooks.md` for detail.
 
 ---
 
-## 7. Operational Model  
-- **Failure isolation:** Each stage reads only upstream logs. A failure never cascades.  
-- **Graceful degradation:** Missing inputs yield NULLs; UI never breaks.  
-- **Rebuildability:** Any point-in-time state can be reproduced from logs.  
-- **Observability:** Health metrics (freshness, coverage, error rate) computed continuously.
+## 8. Operational Model  
 
-### Alerting and Notification
+- **Failure isolation:** Each stage reads only defined upstream logs; failures do not cascade.  
+- **Graceful degradation:** Missing inputs yield NULLs in their columns; the UI remains functional.  
+- **Rebuildability:** Any point-in-time state can be reconstructed from logs.  
+- **Observability:** Health metrics (freshness, coverage, error rate) are computed continuously.
 
-When a new minority event exceeds a defined severity threshold (typically ≥ 0.9) or matches high-impact categories (e.g., viral, competitor stockout), the system triggers an alert.  
+### 8.1 Alerting and Notification (Implemented)
+When a new Minority Event exceeds a configured severity threshold (e.g., ≥ 0.9) or matches high-impact categories (e.g., viral, competitor stockout), the system triggers an alert.
 
-- **Source:** Alerts are generated where reports or event meet set criteria. 
-- **Recipients:** Users and managers subscribed to relevant categories.  
-- **Delivery:** Email and in-platform notification (UI entry point opens directly to the corresponding Minority Event screen).  
-- **Governance:** Every alert is logged to `ui_notifications_log` with `event_id`, `trigger_condition`, and `delivered_to`.  
-
-This ensures operational awareness of critical anomalies without requiring constant manual monitoring of dashboards.
+- **Source:** Alerts are emitted when report/event criteria are met.  
+- **Recipients:** Subscribed users and managers for the relevant scope (retailer/region/category).  
+- **Delivery:** Email and in-platform notification (link opens the corresponding Minority Event in the UI).  
+- **Audit:** Every alert is logged to `ui_notifications_log` with `event_id`, `trigger_condition`, `delivered_to`, and `written_at`.
 
 ---
 
-## 8. User Interaction Path  
-1. Analyst views hydrated minority reports in the Workshop UI.  
+## 9. User Interaction Path  
+1. Analyst views hydrated **Minority Reports** and **Minority Events** in the Workshop UI.  
 2. Filters by confidence, cause, or cluster to prioritise review.  
-3. Makes one or more edits:  
-   - **Report-level:** updates specific fields (e.g., cause, confidence) → logged to `user_edits_log`.  
-   - **Event-level:** updates shared cohort metadata (e.g., cause, category, confidence) → logged to `user_minority_events_edits_log`.  
-4. Finalisation merge (`build_minority_reports_finalised_log_from_edits.py`) consolidates both edit layers with model outputs to produce `MRFL`.  
-5. Optional rereview loop reprocesses low-confidence historical cases.  
+3. Makes edits:  
+   - **Report-level** → `user_edits_log` (e.g., cause correction, approval).  
+   - **Event-level** → `user_minority_events_edits_log` (e.g., cohort cause, evidence).  
+4. Finalisation (`build_minority_reports_finalised_log_from_edits.py`) merges edits and model outputs into **MRFL** (authoritative for rereview).  
+5. Optional rereview loop reprocesses selected historical cases with updated models.
 
 ---
 
-## 9. System Guarantees  
+## 10. System Guarantees  
+
 | Property | Description |
-|-----------|-------------|
-| **Determinism** | Re-running pipeline produces identical outputs. |
-| **Immutability** | Logs never mutate; all history preserved. |
-| **Traceability** | Each field traceable via `report_id` lineage. |
-| **Audit readiness** | Every change stamped with author + timestamp. |
-| **Extensibility** | Real ML models can replace mocks without schema change. |
+|---------|-------------|
+| **Determinism** | Re-running the pipeline produces identical outputs. |
+| **Immutability** | Logs never mutate; all history is preserved. |
+| **Traceability** | Each field is traceable via `report_id`/`report_group_id` lineage. |
+| **Audit readiness** | Every change is stamped with author and timestamp. |
+| **Extensibility** | Mocked models can be swapped for real ones without schema change. |
 
 ---
 
-## 10. Demo Reset Design  
+## 11. Demo Reset Design  
 
-The Minority Report System uses a **Run-ID architecture** that allows clean demo resets without losing historical data.  
+The MRS uses a **Run-ID architecture** that allows clean demo resets without losing historical data:
 
 - Every dataset includes a `run_id` column.  
 - The active `run_id` is stored in `demo_run_config`.  
-- All read-only views automatically filter to that value, isolating the current run.  
+- Read paths filter by that value, isolating the current run.
 
 **Benefits**  
 - Instant reset while preserving previous sessions.  
-- Enables before-and-after comparisons for reviewers.  
-- Guarantees reproducible lineage across multiple demos.  
+- Enables before/after comparisons for reviewers.  
+- Guarantees reproducible lineage across multiple demos.
 
-```sql
-SELECT * 
-FROM proposals_union p
-JOIN demo_run_config c ON p.run_id = c.run_id
-WHERE p.status = '3_attribution_proposed';
+Example query:
