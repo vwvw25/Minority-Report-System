@@ -21,8 +21,8 @@ The MRS is part of a broader analytics platform combining an MMM and a MAB to an
 
 While the MMM sets total budgets for TPO and marketing campaigns at a **monthly** level, the MAB allocates those budgets **daily** across auction-based platforms (e.g. Facebook, TikTok, Programmatic).  
 
-Accurate attribution of sales to campaigns is critical to ensuring the MAB allocates budget efficiently.  
-The MRS specifically identifies **sales anomalies** and establishes their causes to prevent them being misattributed to paid campaigns — misattribution that could otherwise cause the MAB to increase spend on the wrong activities.
+The MRS functions as a **protective layer** between raw sales data and downstream optimisation systems.  
+It identifies **sales anomalies** and establishes their causes to prevent them being misattributed to paid campaigns — misattribution that could otherwise cause the MAB to increase spend on the wrong activities.
 
 ---
 
@@ -81,8 +81,8 @@ unified_sales_data  →  sales_timeseries_data
             ▼
 [Hydration Stage]
  hydrate_minority_reports.py
- ├── minority_reports (hydrated dataset)
- └── minority_events_log (hydrated dataset)
+ └── minority_reports (hydrated dataset)
+
             │
             ▼
 [Rereview Stage — optional]
@@ -90,7 +90,10 @@ unified_sales_data  →  sales_timeseries_data
  ├── rereview_cluster_reports.py
  └── rereview_propose_cause.py
  ```
- 
+
+The system assumes that sales data is already collated, cleaned, and unified upstream into `unified_sales_data` by the wider platform.  
+This dataset is transformed into `sales_timeseries_data`, providing the per-store, per-SKU temporal series from which anomalies are detected.
+
 ---
 
 ## 5. Data Contracts  
@@ -98,15 +101,15 @@ unified_sales_data  →  sales_timeseries_data
 | Dataset | Type | Description |
 |---------|------|-------------|
 | `MRDL` | Log | Authoritative detection log. |
-| `MRCL` | Log | Cluster assignments and similarity metrics. |
+| `MRCL` | Log | Cluster assignments and confidence. |
 | `MRPAL` | Log | Proposed attribution causes and confidence. |
 | `MRCH` | Log | Per-tick snapshots of cohort (event) evolution. |
-| `MELOG` | Log | One stable row per event (event registry). |
+| `MELOG` | Log | One stable row per event (event registry; created by the Cohorting stage). |
 | `user_edits_log` | Log | Analyst edits to individual reports via the UI. |
 | `user_minority_events_edits_log` | Log | Analyst edits to the **Minority Event** object (cohort-level). |
 | `MRFL` | Log | Finalised report rows (merge of model outputs + edits; used for rereview). |
-| `minority_reports` | Dataset | Hydrated, one-row-per-report object used by the UI. |
-| `minority_events_log` | Dataset | Hydrated, one-row-per-event object used by the UI. |
+| `minority_reports` | Dataset | Hydrated, one-row-per-report dataset used by the UI. |
+| `minority_events_log` | Dataset | Backing dataset for Minority Events in the UI (created by cohorting). |
 
 Each dataset is append-only, typed, and reproducible.  
 Hydration deterministically assembles the **current state** for UI consumption without mutating upstream logs.
@@ -124,43 +127,68 @@ This ensures idempotent recomputation, consistent joins, and complete auditabili
 
 ---
 
-## 7. Governance Hooks  
-Governance fields are consistent across all logs:  
-`report_id`, `run_id`, `written_at`, `report_status`, `is_degraded`.  
-They ensure auditability, replayability, and regulatory traceability.  
-See `architecture/governance_hooks.md` for detail.
+## 7. Supporting Ontology Objects
+
+| Ontology | Purpose |
+|-----------|----------|
+| **Store** | Provides retailer-level and geographic metadata for joining sales and anomaly data. |
+| **Campaign** | Supplies contextual and marketing campaign information used during attribution. |
+| **Minority Report** | Represents a single detected anomaly, hydrated from detection, clustering, attribution, and finalisation logs. |
+| **Minority Event** | Represents a cohort of related anomalies inferred to share a common cause, created by the Cohorting stage. |
 
 ---
 
-## 8. Operational Model  
+## 8. Governance Hooks  
+Governance fields are consistent across all logs:  
+`report_id`, `run_id`, `written_at`, `report_status`, `is_degraded`, `degraded_reasons`, `source_used_*`.  
+They ensure auditability, replayability, and regulatory traceability.  
+See [Governance Hooks](../architecture/governance_hooks.md) for detail.
 
-- **Failure isolation:** Each stage reads only defined upstream logs; failures do not cascade.  
-- **Graceful degradation:** Missing inputs yield NULLs in their columns; the UI remains functional.  
-- **Rebuildability:** Any point-in-time state can be reconstructed from logs.  
-- **Observability:** Health metrics (freshness, coverage, error rate) are computed continuously.
+---
 
-### 8.1 Alerting and Notification (Implemented)
-When a new Minority Event exceeds a configured severity threshold (e.g., ≥ 0.9) or matches high-impact categories (e.g., viral, competitor stockout), the system triggers an alert.
+## 9. Operational Model  
 
-- **Source:** Alerts are emitted when report/event criteria are met.  
+- **Failure containment:** Each stage reads from defined upstream logs with fixed fallback precedence; upstream issues degrade outputs but do not halt execution.  
+- **Graceful degradation:** When inputs are missing, fields are populated via fallback sources and the record is explicitly flagged (`is_degraded=true`, `degraded_reasons`, `report_status` annotated).  
+  This preserves continuity while making degradation transparent and auditable.  
+- **Rebuildability:** Any point-in-time state can be deterministically reconstructed from append-only logs.  
+- **Observability:** Health metrics (freshness, coverage, error rate, degradation rate) are continuously monitored and exposed in dashboards.
+
+### 9.1 Alerting and Notification (Design-Complete; Implementation Pending)
+When a new Minority Event exceeds configured thresholds (e.g., severity, total attributed sales), the system triggers an alert. 
+
+- **Source:** Alerts are emitted when report or event criteria are met.  
 - **Recipients:** Subscribed users and managers for the relevant scope (retailer/region/category).  
 - **Delivery:** Email and in-platform notification (link opens the corresponding Minority Event in the UI).  
 - **Audit:** Every alert is logged to `ui_notifications_log` with `event_id`, `trigger_condition`, `delivered_to`, and `written_at`.
 
 ---
 
-## 9. User Interaction Path  
-1. Analyst views hydrated **Minority Reports** and **Minority Events** in the Workshop UI.  
-2. Filters by confidence, cause, or cluster to prioritise review.  
-3. Makes edits:  
-   - **Report-level** → `user_edits_log` (e.g., cause correction, approval).  
-   - **Event-level** → `user_minority_events_edits_log` (e.g., cohort cause, evidence).  
-4. Finalisation (`build_minority_reports_finalised_log_from_edits.py`) merges edits and model outputs into **MRFL** (authoritative for rereview).  
-5. Optional rereview loop reprocesses selected historical cases with updated models.
+## 10. User Interaction Path  
+
+Analysts, managers, and data scientists interact with the system through the **Workshop UI**, which provides both monitoring and human-in-the-loop correction.
+
+Below is a representative flow, showing how a user and the system interact end-to-end.
+
+### Scenario MRS-002: Viral Content Spike
+
+A viral social media post drives a transient surge in sales.
+
+1. **Detection** captures the anomaly from `sales_timeseries_data`.  
+2. **Clustering** assigns it to the *Viral Social Media* cluster with low confidence.  
+3. **Attribution** proposes *Viral Social Media* as the cause with medium confidence.  
+4. **Cohorting** groups the report with others showing similar patterns, forming a single Minority Event.  
+5. **Alerting** triggers a notification when the event’s severity passes defined thresholds.  
+6. **Analyst review:** a marketing analyst opens the event in the UI, checks social listening tools, and confirms a viral video is trending.  
+7. **Edit:** the analyst adds the video link in the `supporting_evidence` field and approves the Minority Event.  
+8. **Finalisation:** the system records the decision in `user_minority_events_edits_log` and merges it into `MRFL`.  
+9. **Protection:** the MAB reads the output dataset, preventing misattribution of the uplift to paid marketing.
+
+This flow demonstrates how human judgment, model outputs, and governance logs combine to protect downstream optimisation systems while maintaining transparency and control.
 
 ---
 
-## 10. System Guarantees  
+## 11. System Guarantees  
 
 | Property | Description |
 |---------|-------------|
@@ -168,11 +196,11 @@ When a new Minority Event exceeds a configured severity threshold (e.g., ≥ 0.9
 | **Immutability** | Logs never mutate; all history is preserved. |
 | **Traceability** | Each field is traceable via `report_id`/`report_group_id` lineage. |
 | **Audit readiness** | Every change is stamped with author and timestamp. |
-| **Extensibility** | Mocked models can be swapped for real ones without schema change. |
+| **Extensibility** | Mocked models can be replaced with real ones without schema change. |
 
 ---
 
-## 11. Demo Reset Design  
+## 12. Demo Reset Design  
 
 The MRS uses a **Run-ID architecture** that allows clean demo resets without losing historical data:
 
@@ -185,4 +213,9 @@ The MRS uses a **Run-ID architecture** that allows clean demo resets without los
 - Enables before/after comparisons for reviewers.  
 - Guarantees reproducible lineage across multiple demos.
 
-Example query:
+**Example query:**
+```sql
+SELECT * 
+FROM minority_reports
+WHERE run_id = (SELECT run_id FROM demo_run_config)
+AND report_status = 'proposed';
