@@ -42,7 +42,6 @@ Identify, cluster, and attribute short-term sales anomalies in a reproducible, e
 
 ## 4. High-Level Flow  
 
-\`\`\`
 unified_sales_data  →  sales_timeseries_data
             │
             ▼
@@ -69,8 +68,7 @@ unified_sales_data  →  sales_timeseries_data
  └── minority_event_log (MELOG)
             │
             ▼
-[User Edit Stages]
- (Workshop UI)
+[User Edit Stages — Workshop UI]
  ├── user_edits_log (report-level)
  └── user_minority_events_edits_log (event-level)
             │
@@ -86,12 +84,11 @@ unified_sales_data  →  sales_timeseries_data
  └── minority_events_log (hydrated dataset)
             │
             ▼
-[Rereview Stage] (optional downstream loop)
+[Rereview Stage — optional]
  ├── build_rereview_worklist.py
  ├── rereview_cluster_reports.py
  └── rereview_propose_cause.py
-\`\`\`
-
+ 
 ---
 
 ## 5. Data Contracts  
