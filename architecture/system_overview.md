@@ -66,7 +66,7 @@ unified_sales_data  →  sales_timeseries_data
 [Cohorting Stage]
  build_minority_report_cohorts.py
  ├── minority_reports_cohorted_log (MRCH)
- └── minority_event_log (MELOG)
+ └── minority_events (MELOG)
             │
             ▼
 [User Edit Stages — Workshop UI]
@@ -109,7 +109,7 @@ This dataset is transformed into `sales_timeseries_data`, providing the per-stor
 | `user_minority_events_edits_log` | Log | Analyst edits to the **Minority Event** object (cohort-level). |
 | `MRFL` | Log | Finalised report rows (merge of model outputs + edits; used for rereview). |
 | `minority_reports` | Dataset | Hydrated, one-row-per-report dataset used by the UI. |
-| `minority_events_log` | Dataset | Backing dataset for Minority Events in the UI (created by cohorting). |
+| `minority_events` | Dataset | Backing dataset for Minority Events in the UI (created by cohorting). |
 
 Each dataset is append-only, typed, and reproducible.  
 Hydration deterministically assembles the **current state** for UI consumption without mutating upstream logs.
