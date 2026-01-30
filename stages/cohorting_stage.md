@@ -22,7 +22,7 @@ The transform deterministically assigns each anomaly to an event group (`report_
 | Dataset | Purpose |
 |----------|----------|
 | `minority_reports_cohorted_log` (MRCH) | Per-tick snapshots of evolving events. |
-| `minority_event_log` (MELOG) | One stable row per event (registry of active and ended events). |
+| `minority_events` (MELOG) | One stable row per event (registry of active and ended events). |
 
 Both logs are **append-only** and keyed by deterministic identifiers.  
 Each anomaly retains its `report_id = hash(store_id || first_detected_from)`.  
@@ -55,7 +55,7 @@ This guarantees reproducible groupings and stable lineage across replays.
 2. **Group:** combine anomalies that share time overlap and similar cluster or attribution results.  
 3. **Assign:** generate deterministic `report_group_id`s based on earliest detection within each cohort.  
 4. **Write:** append cohort snapshots to `minority_reports_cohorted_log` (MRCH).  
-5. **Register:** create or update one authoritative row per event in `minority_event_log` (MELOG).  
+5. **Register:** create or update one authoritative row per event in `minority_events` (MELOG).  
 6. **Post-cohort edits:** analysts may later update event-level data via `user_minority_events_edits_log`,  
    maintaining a complete audit trail.
 
