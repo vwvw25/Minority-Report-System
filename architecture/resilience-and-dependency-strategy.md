@@ -14,8 +14,8 @@ The goal is to ensure anomaly detection, clustering, attribution, and hydration 
 - **Stage isolation**  
   Each stage reads only its defined inputs and never depends on downstream outputs. Failures are contained within a single dataset.  
 
-- **Run-scoped views**  
-  UIs read views filtered by `demo_run_config.run_id`. A run can be “reset” simply by advancing the run_id, even if prior logs are unhealthy.  
+- **Run-scoped datasets**  
+  UIs read datasets filtered by `demo_run_config.run_id`. A run can be “reset” simply by advancing the run_id, even if prior logs are unhealthy.  
 
 - **Graceful degradation**  
   - If clustering is down → detection still runs.  
