@@ -120,7 +120,7 @@ Cohorting identifies overlap in timing and attribution and groups both reports i
 **Properties**
 - Append-only and fully replayable.  
 - Bridges report-level and event-level perspectives (`report_id` ↔ `report_group_id`).  
-- Schema unifies anomaly, clustering, and attribution data into a cohesive event view.  
+- Schema unifies anomaly, clustering, and attribution data into a cohesive event dataset.  
 - Downstream logs (MELOG, MRFL) derive from this authoritative cohort layer.
 
 ---
