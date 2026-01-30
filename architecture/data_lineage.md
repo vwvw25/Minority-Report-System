@@ -41,8 +41,8 @@ It captures the end-to-end lineage between transforms, datasets, and user interf
    │  
    ▼  
 **[Hydration Stage]**  
-→ `minority_reports` *(wide view, one row per report)*  
-→ `minority_events` *(wide view, one row per event)*  
+→ `minority_reports` *(hydrated dataset, one row per report)*  
+→ `minority_events` *(hydrated dataset, one row per event)*  
    │  
    ▼  
 **[Rereview Stage]** *(downstream-only)*  
@@ -65,8 +65,8 @@ It captures the end-to-end lineage between transforms, datasets, and user interf
 | **user_edits_log** | `user_edits_log` | UI (analyst actions) | Finalisation | Human-in-the-loop per-report edits and annotations. |
 | **user_minority_events_edits_log** | `user_minority_events_edits_log` | UI (analyst actions) | Finalisation, Hydration | Analyst edits to minority event objects (metadata, evidence, etc.). |
 | **MRFL** | `minority_reports_finalised_log` | `build_minority_reports_finalised_log_from_edits.py` | Hydration | Final authoritative merge of machine proposals and analyst decisions. |
-| **minority_reports** | `minority_reports` *(view)* | `hydrate_minority_reports.py` | UI, API | Hydrated, latest-per-report object for user interface. |
-| **minority_events_log** | `minority_events` *(view)* | `hydrate_minority_reports.py` | UI, API | Wide event-level aggregation for event dashboards. |
+| **minority_reports** | `minority_reports` *(hydrated dataset)* | `hydrate_minority_reports.py` | UI, API | Hydrated, latest-per-report object for user interface. |
+| **minority_events_log** | `minority_events` *(hydrated dataset)* | `hydrate_minority_reports.py` | UI, API | Wide event-level aggregation for event dashboards. |
 | **MRRW** | `minority_reports_rereview_worklist` | `build_rereview_worklist.py` | rereview_cluster_reports.py | Queue of reports eligible for rereview. |
 | **MRCRL** | `minority_reports_clustered_rereview_log` | `rereview_cluster_reports.py` | rereview_propose_cause.py, Hydration | Rerun clustering results for historical low-confidence reports. |
 | **MRPARL** | `minority_reports_proposed_attribution_rereview_log` | `rereview_propose_cause.py` | Hydration | Updated attribution results after rereview pass. |
@@ -100,7 +100,7 @@ Together, they guarantee complete replayability and audit-readiness of event-lev
 
 2. **MEEL + MELOG → Hydration**  
    - Define event lifecycle (`active`, `ended`).  
-   - Feed into the event-wide views used in the UI.  
+   - Feed into the event-wide hydrated datasets used in the UI.  
 
 3. **User Logs (UI)**  
    - `user_edits_log` and `user_minority_events_edits_log` supply human overrides.  
