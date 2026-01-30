@@ -99,7 +99,7 @@ See [`ui_workshop_notes.md`](../ui_workshop_notes.md) for the front-end workflow
 → Provides full lineage of per-report human intervention.
 
 **Per-event audit**
-1. Query `event_id` from `minority_events_log`.  
+1. Query `event_id` from `minority_events`.  
 2. Join to `edit_minority_event_object_log` for event-level modifications (e.g., metadata, evidence, or classification updates).  
 3. Compare event metadata before and after edit to validate reasoning and governance traceability.  
 → Provides a parallel audit trail for higher-level event object changes.
