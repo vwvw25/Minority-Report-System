@@ -33,7 +33,7 @@ the current operational and analytical view of every report and event.
 | Dataset | Description |
 |----------|--------------|
 | `minority_reports` | One row per report_id — latest state across all logs. |
-| `minority_events_log` | One row per event_id — aggregated cohort view (mirrors MRCH + MELOG). |
+| `minority_events` | One row per event_id — aggregated cohort view (mirrors MRCH + MELOG). |
 
 Both are **read-only materialisations**; they can be rebuilt deterministically from logs.
 
