@@ -221,7 +221,7 @@ No manual resets are required — the system detects that new data has arrived a
 ### 12.4 Governance and Traceability  
 - **Audit trail:** The original anomaly, its resolution, and all intermediate states remain in immutable logs.  
 - **Status propagation:** The affected reports carry `report_status='superseded'` and `is_degraded=true` until reprocessed.  
-- **Transparency:** The system automatically annotates the resolution in `minority_events_log`, preserving full lineage.  
+- **Transparency:** The system automatically annotates the resolution in `minority_events`, preserving full lineage.  
 - **Replayability:** Any historical state — before or after correction — can be reconstructed by rehydrating logs at a given `written_at` timestamp.  
 
 ### 12.5 Business Outcome  
