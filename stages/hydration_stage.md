@@ -12,7 +12,7 @@ across detection, clustering, attribution, cohorting, and finalisation — into 
 This hydrated dataset underpins the **Minority Report ontology object**, providing a continuously up-to-date,  
 queryable representation of each report’s state at any point in time.  
 The transform never mutates upstream data; it reads append-only logs and deterministically assembles  
-the current operational and analytical view of every report and event.
+the current operational and analytical dataset of every report and event.
 
 ---
 
@@ -24,7 +24,7 @@ the current operational and analytical view of every report and event.
 | `minority_reports_proposed_attribution_log` (MRPAL) | Model-proposed causes and confidence. |
 | `minority_reports_cohorted_log` (MRCH) | Event-level snapshots. |
 | `minority_reports_finalised_log` (MRFL) | Analyst-finalised causes. |
-| `*_rereview_log` datasets | Optional rereviewed clustering/attribution outputs. |
+| `*_reredataset_log` datasets | Optional rereviewed clustering/attribution outputs. |
 | `demo_run_config` | Provides `run_id` and filtering context. |
 
 ---
@@ -33,7 +33,7 @@ the current operational and analytical view of every report and event.
 | Dataset | Description |
 |----------|--------------|
 | `minority_reports` | One row per report_id — latest state across all logs. |
-| `minority_events` | One row per event_id — aggregated cohort view (mirrors MRCH + MELOG). |
+| `minority_events` | One row per event_id — aggregated cohort dataset (mirrors MRCH + MELOG). |
 
 Both are **read-only materialisations**; they can be rebuilt deterministically from logs.
 
@@ -92,7 +92,7 @@ Hydration coalesces these into a single row:
 
 ---
 
-### Output Schema — `minority_reports` (Hydrated View)
+### Output Schema — `minority_reports` (Hydrated dataset)
 
 | Field | Type | Description |
 |--------|------|-------------|
@@ -140,7 +140,7 @@ Hydration coalesces these into a single row:
 | `refresh_seq` | long | Sequence number for hydration refresh tracking. |
 
 **Properties**
-- Unified, **hydrated view** merging detection, clustering, attribution, cohorting, and finalisation layers.  
+- Unified, **hydrated dataset** merging detection, clustering, attribution, cohorting, and finalisation layers.  
 - One row per `report_id` representing the most recent state of each anomaly.  
 - Fully replayable and lineage-safe via deterministic IDs and source provenance.  
 - Primary dataset powering the Workshop UI and dashboards.
@@ -149,4 +149,4 @@ Hydration coalesces these into a single row:
 
 **Summary:**  
 Hydration is the reconciliation layer of the Minority Report System.  
-It deterministically fuses every log into a coherent, analyst-facing view — idempotent, replayable, and enterprise-ready.
+It deterministically fuses every log into a coherent, analyst-facing dataset — idempotent, replayable, and enterprise-ready.
