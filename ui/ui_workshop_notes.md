@@ -63,7 +63,7 @@ At the top, four KPI cards show:
 
 By default, the table lists **unapproved** reports.  
 Kayla filters by *retailer = Waitrose*, *status = active*, *proposed cause = data error*.  
-Each row links to the **Report Detail view**, which includes:  
+Each row links to the **Report Detail (i.e. Minority Report) view**, which includes:  
 - Time-series view (actual vs. baseline).  
 - Proposed causes and confidence.  
 - Cluster position on UMAP.  
