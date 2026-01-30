@@ -48,7 +48,7 @@ downstream decision systems (e.g., MAB, MMM) are protected from distortion.
   into a single unified dataset via `hydrate_minority_reports.py`.  
 - This hydrated dataset underpins the **Minority Report ontology object**,  
   which is viewable and editable in the Workshop UI.  
-- Also produces an event-level roll-up (`minority_event_log`) for analytical use.  
+- Also produces an event-level roll-up (`minority_events`) for analytical use.  
 
 ### 6. **Automation / HITL (Illustrative)**  
 - Demonstrates how confidence thresholds could drive auto-confirmation  
