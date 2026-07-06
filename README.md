@@ -24,6 +24,10 @@ This project focuses on production system architecture rather than model develop
 
 ## Repository Structure
 
+The repository is organised around a set of Design Documents. Together they capture the reasoning behind the system’s design.
+
+### Architecture
+
 ### Architecture
 - [`architecture/strategy.md`](./architecture/strategy.md) — High-level system design and philosophy.  
 - [`architecture/resilience-and-dependency-strategy.md`](./architecture/resilience-and-dependency-strategy.md) — Resilience and dependency handling patterns.  
