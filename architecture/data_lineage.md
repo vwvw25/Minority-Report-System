@@ -3,12 +3,10 @@
 ---
 
 ## 1. Purpose  
-This document describes how data moves through the Minority Report System (MRS) — from raw inputs to hydrated ontology objects used by the human-in-the-loop interface.
-It captures the end-to-end lineage between transforms, datasets, and user interfaces, ensuring full transparency and reproducibility.
-
+This document describes how data moves through the Minority Report System (MRS), from raw inputs to hydrated ontology objects used by the human-in-the-loop interface. It captures the end-to-end lineage between transforms, datasets and user interfaces. This lineage records how every output was derived from its inputs, making the system fully traceable and reproducible.
 ---
 
-## 2. Logical Flow  
+## 2. Pipeline Flow  
 
 [sales_timeseries_data]  
    │  
@@ -64,7 +62,7 @@ It captures the end-to-end lineage between transforms, datasets, and user interf
 | **MELOG** | `minority_events` | `cohort_reports.py` | Hydration | Registry of all active and ended events (one row per event). |
 | **user_edits_log** | `user_edits_log` | UI (analyst actions) | Finalisation | Human-in-the-loop per-report edits and annotations. |
 | **user_minority_events_edits_log** | `user_minority_events_edits_log` | UI (analyst actions) | Finalisation, Hydration | Analyst edits to minority event objects (metadata, evidence, etc.). |
-| **MRFL** | `minority_reports_finalised_log` | `build_minority_reports_finalised_log_from_edits.py` | Hydration | Final authoritative merge of machine proposals and analyst decisions. |
+| **MRFL** | `minority_reports_finalised_log` | `build_minority_reports_finalised_log_from_edits.py` | Hydration | Final merged record of machine proposals and analyst decisions. |
 | **minority_reports** | `minority_reports` *(hydrated dataset)* | `hydrate_minority_reports.py` | UI, API | Hydrated, latest-per-report object for user interface. |
 | **minority_events_log** | `minority_events` *(hydrated dataset)* | `hydrate_minority_reports.py` | UI, API | Wide event-level aggregation for event dashboards. |
 | **MRRW** | `minority_reports_rereview_worklist` | `build_rereview_worklist.py` | rereview_cluster_reports.py | Queue of reports eligible for rereview. |
@@ -75,20 +73,20 @@ It captures the end-to-end lineage between transforms, datasets, and user interf
 
 ## 4. Why Both `minority_reports_cohorted_log` (MRCH) and `minority_events` (MELOG) Exist
 
-Although both datasets relate to the same underlying anomaly-event lifecycle, they serve distinct and complementary purposes:
+Although both datasets relate to the same anomaly-event lifecycle, they serve distinct and complementary purposes:
 
 | Log | Purpose | Characteristics |
 |------|----------|----------------|
 | **MRCH — minority_reports_cohorted_log** | **Time-series snapshots** of each active event. Captures how the system’s understanding of an event evolves over time (e.g., expanding window, changing severity, cumulative impact). | Multiple rows per event; append-only; used for temporal analysis, trend visualisation, and audit of intermediate states. |
-| **MELOG — minority_event_log** | **Stable registry** of each event. One row per event summarising final or latest state (start, end, totals, cause, status). | Single authoritative record per event; used for attribution, reporting, and integration with MMM/MAB. |
+| **MELOG — minority_event_log** | Stable registry of each event. One row per event summarising the latest state (start, end, totals, cause, status). | Canonical event registry; used for attribution, reporting, and integration with MMM/MAB. |
 
 **Design Principle:**  
-MRCH shows *how understanding changed over time*, while MELOG provides *what the system ultimately concluded*.  
+MRCH shows how the system’s understanding of an event changed over time, while MELOG provides the event’s latest state.
 Both are required for full lineage:
 
 - **Temporal auditability** → MRCH preserves every historical snapshot.  
 - **Lineage stability** → MELOG provides deterministic, joinable event identities.  
-- **Resilience and performance** → MELOG offers a lightweight registry when MRCH grows large.  
+- **Operational efficiency** → Consumers that only need the current state of each event can query MELOG directly without scanning the full historical record in MRCH.
 
 Together, they guarantee complete replayability and audit-readiness of event-level intelligence.
 
@@ -124,5 +122,5 @@ Together, they guarantee complete replayability and audit-readiness of event-lev
 ---
 
 **Summary:**  
-This lineage demonstrates how the Minority Report System maintains a complete, deterministic data trail — from anomaly detection through human interaction, finalisation, and optional rereview — all without mutating historical data.  
+The Minority Report System maintains a complete, deterministic data trail from anomaly detection through human interaction, finalisation, and optional rereview, all without mutating historical data.  
 Every dataset in the flow is traceable, auditable, and reproducible, forming the backbone of the MRS governance model.
