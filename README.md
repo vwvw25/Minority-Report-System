@@ -1,12 +1,13 @@
 # Minority Report System (MRS)
 
 ## Overview
-The **Minority Report System (MRS)** is a production-grade demo pipeline built in Foundry.  
-Its purpose is to identify and classify sales anomalies to prevent distortion in downstream decision systems (e.g. MAB, MMM).  
 
-The project focuses on **system design** — log-driven, stateless, and idempotent — rather than on training live machine learning models.  
-All core transforms, datasets, governance hooks, and user interfaces are built as they would be in a real deployment.  
-Model “intelligence” is mocked so the pipeline runs end-to-end.
+Is today’s sales spike being driven by your latest paid social campaign, or by something else entirely?
+
+The Minority Report System (MRS) is a Human-in-the-Loop pipeline that identifies and classifies sales anomalies before they distort downstream decision systems such as Marketing Attribution and Marketing Mix Modelling.
+
+This project focuses on production system architecture rather than model development. The underlying models are mocked, while the pipelines, datasets, ontology, governance, and user interfaces are implemented as they might be in a real deployment.
+
 
 ➡️ **Watch the demo video [here](INSERT-LINK)** for a walkthrough of the full system and UI.
 
@@ -44,29 +45,4 @@ Model “intelligence” is mocked so the pipeline runs end-to-end.
 
 ---
 
-## Mocking Approach
-Models are **mocked strategically**:
-- Architecture, ontology, and logs are implemented in full.  
-- Outputs are schema-correct and plausible.  
-- Retraining loops, drift detection, and governance hooks exist in design.  
-- The only missing step is *learning itself* — ensuring a frictionless upgrade path when real ML models are introduced.
-
----
-
-## Success Criteria
-This build demonstrates:
-- An end-to-end anomaly detection pipeline with append-only logs and deterministic identities.  
-- Plausible, schema-correct outputs at every stage.  
-- A clear upgrade path to real ML models without changing downstream contracts.  
-- Full auditability, replayability, and HITL readiness.  
-- **UI impact:** a visually robust and intuitive Workshop interface that makes system value immediately visible.
-
----
-
-## Status
-This is a **demo build**:  
-- Intelligence → mocked  
-- Architecture → real  
-- Governance, lineage, and UI → real  
-
-The system demonstrates how anomaly detection can be operationalised in enterprise environments where **auditability**, **determinism**, and **replayability** are critical.
+The result is an end-to-end system that helps marketing teams investigate unexpected sales behaviour without compromising the auditability, determinism and governance required in enterprise environments.
