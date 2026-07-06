@@ -3,7 +3,9 @@
 ---
 
 ## 1. Purpose  
+
 This document describes how data moves through the Minority Report System (MRS), from raw inputs to hydrated ontology objects used by the human-in-the-loop interface. It captures the end-to-end lineage between transforms, datasets and user interfaces. This lineage records how every output was derived from its inputs, making the system fully traceable and reproducible.
+
 ---
 
 ## 2. Pipeline Flow  
