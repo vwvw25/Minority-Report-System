@@ -6,13 +6,13 @@
 ## 1. Purpose  
 The attribution stage proposes **causes** for each minority report via the transform `propose_cause_for_minority.py`,  
 which applies the **attribution model** (mocked in the MVP) to contextual and campaign data to infer the most plausible explanation for each anomaly.  
-It writes authoritative outputs to the **Minority Reports Proposed Attribution Log (MRPAL)**.
+It writes to the **Minority Reports Proposed Attribution Log (MRPAL)**.
 
 ---
 
 ## 2. Inputs  
 - **`minority_reports_detected_log` (MRDL):** anomaly IDs, store/SKU, timings, totals.  
-- **`sales_timeseries_data`:** backing time series for checks.  
+- **`sales_timeseries_data`:** backing time series.  
 - **`contextual_data`:** weather, holidays, competitor events.  
 - **`all_campaign_data`:** marketing and promo metadata.  
 - **`demo_run_config`:** provides run_id.  
