@@ -8,7 +8,7 @@
 Governance in the Minority Report System (MRS) is built **into the architecture**, not bolted on.  
 Every transform produces immutable, append-only logs with deterministic identifiers, enabling full lineage, audit, and replay across the entire anomaly detection lifecycle.  
 
-This document summarises the key **governance hooks** that make the system transparent, compliant, and trustworthy in enterprise environments.
+This document summarises the key governance hooks that support transparency, auditability, and accountability across the system.
 
 ---
 
@@ -35,7 +35,7 @@ This document summarises the key **governance hooks** that make the system trans
 | `is_degraded` | Boolean flag if any upstream source missing or delayed. | Hydration |
 | `report_status` | Categorical lifecycle label (`detected`, `clustered`, `proposed`, `finalised`, `ended`). | All stages |
 
-These fields collectively provide full **temporal and procedural lineage** — allowing any value in the UI to be traced back to its source row and transform.
+These fields collectively provide **temporal and procedural lineage** — allowing any value in the UI to be traced back to its source row and transform.
 
 ---
 
@@ -88,7 +88,7 @@ See [`ui_workshop_notes.md`](../ui_workshop_notes.md) for the front-end workflow
 1. Filter all logs by `report_id='abc123'`.  
 2. Sort by `written_at`.  
 3. Replay sequentially (MRDL → MRCL → MRPAL → MRFL → Hydration).  
-→ Produces identical final state, confirming system determinism.
+→ Reproduces the same final state, demonstrating deterministic behaviour.
 
 **Scenario B — Audit analyst edit**
 
@@ -156,4 +156,4 @@ Each reopen action generates:
 
 ## 9. Summary  
 Governance in the MRS is intrinsic — achieved through **immutable logs, deterministic IDs, and explicit human annotation capture**.  
-The result is a fully replayable, audit-ready system where every anomaly, cluster, and decision is traceable end-to-end, meeting the standards expected of enterprise data governance.
+The result is a fully replayable, audit-ready system where every anomaly, cluster, and decision is traceable end-to-end, suitable for enterprise data governance.
