@@ -49,4 +49,4 @@ The repository is organised around a set of Design Documents. Together they capt
 
 ---
 
-The result is an end-to-end system that helps marketing teams investigate unexpected sales behaviour without compromising the auditability, determinism and governance required in enterprise environments.
+The result is an end-to-end system that enables marketing teams to identify, investigate and classify unexpected sales behaviour.
