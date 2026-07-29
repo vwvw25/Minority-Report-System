@@ -53,6 +53,8 @@ The repository is organised around a set of Design Documents. Together they capt
 ### UI
 - [`ui/ui_workshop_notes.md`](./ui/ui_workshop_notes.md) — Front-end analyst workflows and system interactions.
 
+![Individual Report Screen](Minority%20Report%20View.png)
+
 ---
 
 The result is an end-to-end system that enables marketing teams to identify, investigate and classify unexpected sales behaviour.
