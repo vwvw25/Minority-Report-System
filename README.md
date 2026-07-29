@@ -8,7 +8,7 @@ The Minority Report System (MRS) is a Human-in-the-Loop pipeline that identifies
 
 This project focuses on production system architecture rather than model development. The underlying models are mocked, while the pipelines, datasets, ontology, governance, and user interfaces are implemented as they might be in a real deployment.
 
-![Workspace UI for All Reports](MRS%20Data%20Lineage.png)
+![Workspace UI for All Reports](Minority%20Reports%20-%20All%20Reports%20View.png)
 
 
 ➡️ **Watch the demo video [here](https://www.youtube.com/watch?v=1CyLjJoZHFw)** for a walkthrough of the full system and UI.
