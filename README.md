@@ -34,6 +34,8 @@ The repository is organised around a set of Design Documents. Together they capt
 
 ![Minority Report System](MRS%20Data%20Lineage.png)
 
+![MRS Diagram](MRS%20Diagram.png)
+
 ### Architecture
 - [`architecture/strategy.md`](./architecture/strategy.md) — High-level system design and philosophy.  
 - [`architecture/resilience-and-dependency-strategy.md`](./architecture/resilience-and-dependency-strategy.md) — Resilience and dependency handling patterns.  
