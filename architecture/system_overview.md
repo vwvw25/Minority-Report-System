@@ -43,52 +43,37 @@ Identify, cluster, and attribute short-term sales anomalies in a reproducible, e
 ## 4. High-Level Flow
 
 ```
-unified_sales_data  →  sales_timeseries_data
-            │
-            ▼
-[Detection Stage]
- detect_anomalies.py
- ├── baseline_sales_model_prediction_log
- ├── anomaly_classifier_model_prediction_log
- └── minority_reports_detected_log (MRDL)
-            │
-            ▼
-[Clustering Stage]
- cluster_minority_report.py
- └── minority_reports_clustered_log (MRCL)
-            │
-            ▼
-[Attribution Stage]
- propose_cause_for_minority.py
- └── minority_reports_proposed_attribution_log (MRPAL)
-            │
-            ▼
-[Cohorting Stage]
- build_minority_report_cohorts.py
- ├── minority_reports_cohorted_log (MRCH)
- └── minority_events (MELOG)
-            │
-            ▼
-[User Edit Stages — Workshop UI]
- ├── user_edits_log (report-level)
- └── user_minority_events_edits_log (event-level)
-            │
-            ▼
-[Finalisation Stage]
- build_minority_reports_finalised_log_from_edits.py
- └── minority_reports_finalised_log (MRFL)
-            │
-            ▼
-[Hydration Stage]
- hydrate_minority_reports.py
- └── minority_reports (hydrated dataset)
+                         ┌──────────────────────────────────────────┐
+                         │   ANALYTICAL & GOVERNANCE PIPELINE       │
+                         └──────────────────────────────────────────┘
 
-            │
-            ▼
-[Rereview Stage — optional]
- ├── build_rereview_worklist.py
- ├── rereview_cluster_reports.py
- └── rereview_propose_cause.py
+
+unified_sales_data  →  sales_timeseries_data
+                              │
+                              ▼
+Detect  →  Cluster  →  Attribute  →  Cohort  →  Human Review  →  Finalisation
+  │           │            │           │              │                │
+  ▼           ▼            ▼           ▼              ▼                ▼
+
+──────────────────────────────────────────────────────────────────────────────
+                           IMMUTABLE EVIDENCE LOGS
+
+ Detection  │  Clustering  │  Attribution  │  Cohorting  │  User Review  │  Finalised
+──────────────────────────────────────────────────────────────────────────────
+
+
+                                      │
+                                      ▼
+
+                               HYDRATION STAGE
+                         (Replays Immutable Evidence
+                        and Reconstructs Current Ontology)
+
+                                      │
+                                      ▼
+
+                      MINORITY REPORT  /  MINORITY EVENT  
+
  ```
 
 The system assumes that sales data is already collated, cleaned, and unified upstream into `unified_sales_data` by the wider platform.  
