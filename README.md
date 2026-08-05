@@ -26,31 +26,13 @@ This project focuses on production system architecture rather than model develop
 
 ---
 
-## Repository Structure
-
-The repository is organised around a set of Design Documents. Together they capture the reasoning behind the system’s design.
-
 ### Architecture
 
 ![Minority Report System](MRS%20Data%20Lineage.png)
 
 ![MRS Diagram](MRS%20Diagram.png)
 
-### Architecture
-- [`architecture/strategy.md`](./architecture/strategy.md) — High-level system design and philosophy.  
-- [`architecture/resilience-and-dependency-strategy.md`](./architecture/resilience-and-dependency-strategy.md) — Resilience and dependency handling patterns.  
-- [`architecture/governance_hooks.md`](./architecture/governance_hooks.md) — Audit, override, and auto-approval governance logic.  
-- [`architecture/system_overview.md`](./architecture/system_overview.md) — End-to-end data flow, contracts, and ontology.  
-- [`architecture/data_lineage.md`](./architecture/data_lineage.md) — Deterministic IDs, append-only logs, and end-to-end lineage/replay procedures.
-
-### Stages
-- [`stages/detection_stage.md`](./stages/detection_stage.md)  
-- [`stages/clustering_stage.md`](./stages/clustering_stage.md)  
-- [`stages/attribution_stage.md`](./stages/attribution_stage.md)  
-- [`stages/cohorting_stage.md`](./stages/cohorting_stage.md)  
-- [`stages/finalization_stage.md`](./stages/finalization_stage.md)  
-- [`stages/hydration_stage.md`](./stages/hydration_stage.md)  
-- [`stages/rereview_stage.md`](./stages/rereview_stage.md)  
+---
 
 ### UI
 - [`ui/ui_workshop_notes.md`](./ui/ui_workshop_notes.md) — Front-end analyst workflows and system interactions.
