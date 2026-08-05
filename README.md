@@ -24,6 +24,8 @@ This project focuses on production system architecture rather than model develop
 - **Deterministic IDs:** stable hashing (`store_id || first_detected_from`) guarantees reproducible joins and lineage.  
 - **Enterprise-ready:** full ontology, transforms, governance, audit trail, and HITL interfaces are implemented.
 
+📄 **Read the [System Overview](System%20Overview.md)**
+
 ---
 
 ### Architecture
