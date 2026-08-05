@@ -35,7 +35,6 @@ This project focuses on production system architecture rather than model develop
 ---
 
 ### UI
-- [`ui/ui_workshop_notes.md`](./ui/ui_workshop_notes.md) — Front-end analyst workflows and system interactions.
 
 ![Individual Report Screen](Minority%20Report%20View.png)
 
