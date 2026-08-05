@@ -57,6 +57,8 @@ The repository is organised around a set of Design Documents. Together they capt
 
 ![Individual Report Screen](Minority%20Report%20View.png)
 
+![AIP Assistant](AIP%20Assistant.png)
+
 ---
 
 The result is an end-to-end system that enables marketing teams to identify, investigate and classify unexpected sales behaviour.
